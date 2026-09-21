@@ -1,28 +1,34 @@
-# 内置默认配置
+# Built-in default configuration
 
-`config/default.json` 是随客户端发布的默认配置，必须保留。Desktop 从打包文件读取，
-Web 在构建时导入；远端请求失败或缺少有效字段时使用内置值。
+`config/default.json` is the default configuration shipped with the client and must be kept.
+Desktop reads it from the packaged file, Web imports it at build time; it is used as the
+fallback when the remote request fails or lacks valid fields.
 
-## 帮助配置来源
+## Help configuration source
 
-新版社群和反馈入口请求当前 endpoint 的 `GET /api/v1/client/configs`，
-读取 `data.configs.feedbackUrl`：
+The newer community and feedback entry points request `GET /api/v1/client/configs` from the
+current endpoint and read `data.configs.feedbackUrl`:
 
-- `community_urls["zh-CN" | "en-US"]`：只按当前语言回退到内置入口，不跨语言回退。
-- `feedback_url`：远端有效地址优先，否则使用内置地址。
-- `feedback_use_external_form`：远端布尔值优先，`false` 也是有效覆盖。
+- `community_urls["zh-CN" | "en-US"]`: falls back only to the built-in entry for the current
+  language, never across languages.
+- `feedback_url`: the remote address wins when valid, otherwise the built-in address is used.
+- `feedback_use_external_form`: the remote boolean wins; `false` is a valid override too.
 
-请求携带 `app_version`；Desktop 另带 `platform-arch`，Web 省略平台参数。
-成功响应仅做 1 小时内存缓存，请求使用 `cache: no-store`，失败不缓存。
+The request carries `app_version`; Desktop also sends `platform-arch`, Web omits the platform
+parameter. Successful responses are cached in memory for 1 hour only, requests use
+`cache: no-store`, and failures are not cached.
 
 ```text
-当前 endpoint client/configs -> 有效帮助字段 -> 平台入口
-                  | 缺失 / 失败
+current endpoint client/configs -> valid help fields -> platform entry
+                  | missing / failed
                   v
-          内置 default.json -> 平台入口
+      built-in default.json -> platform entry
 ```
 
-default.json 为随客户端分发的内置默认配置；历史上曾经 CDN 分发、仅为旧版客户端兼容保留，
-现版本无请求或 URL 构造链路，只依赖本目录内置文件，其他字段与既有消费者保持不变。
+`default.json` is the built-in default configuration distributed with the client; historically
+it was CDN-distributed and is kept only for older-client compatibility. The current version has
+no request or URL construction path and depends solely on the built-in file in this directory;
+other fields remain unchanged for existing consumers.
 
-详细规则见 [用户社群入口配置](../docs/ui/settings-community-link-config.md)。
+See [user community entry configuration](../docs/ui/settings-community-link-config.md) for the
+detailed rules.

@@ -1,6 +1,6 @@
 version: 1
 
-# 存量模块先标记为 legacy；新模块或完成迁移的模块设置 managed: true。
+# Existing modules start marked as legacy; new modules or completed migrations set managed: true.
 modules:
   - id: rpc
     roots: [packages/rpc/src]
