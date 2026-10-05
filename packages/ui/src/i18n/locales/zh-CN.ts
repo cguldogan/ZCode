@@ -2854,6 +2854,31 @@ const zhCN: Record<string, string> = {
   "settings.modelProvider.models": "模型列表",
   "settings.modelProvider.modelsEmpty": "当前没有配置模型，添加模型后可在聊天中使用。",
   "settings.modelProvider.addModel": "添加模型",
+  "settings.modelProvider.remoteModels.load": "获取模型",
+  "settings.modelProvider.remoteModels.title": "从服务器获取模型",
+  "settings.modelProvider.remoteModels.description":
+    "来自 {baseUrl}/models 的模型列表，已添加的模型不再显示。",
+  "settings.modelProvider.remoteModels.loading": "正在获取模型…",
+  "settings.modelProvider.remoteModels.empty": "没有新模型，服务器上的模型均已添加。",
+  "settings.modelProvider.remoteModels.selectAll": "全选（{count}）",
+  "settings.modelProvider.remoteModels.add": "添加所选（{count}）",
+  "settings.modelProvider.remoteModels.adding": "正在添加 {done}/{total}…",
+  "settings.modelProvider.remoteModels.retry": "重试",
+  "settings.modelProvider.remoteModels.addFailed":
+    "已添加 {done}/{total} 个模型，在 {modelId} 处停止：{message}",
+  "settings.modelProvider.remoteModels.error.missing-base-url": "请先保存有效的 Base URL。",
+  "settings.modelProvider.remoteModels.error.missing-api-key":
+    "请先保存 API Key；若服务器未开启鉴权，可填写任意占位值。",
+  "settings.modelProvider.remoteModels.error.provider-not-found": "该供应商已不存在。",
+  "settings.modelProvider.remoteModels.error.unsupported-api-type":
+    "获取模型需要 OpenAI 兼容的 API 格式。",
+  "settings.modelProvider.remoteModels.error.timeout": "服务器 15 秒内未响应。",
+  "settings.modelProvider.remoteModels.error.network":
+    "无法连接服务器，请检查 Base URL 以及服务是否已启动。",
+  "settings.modelProvider.remoteModels.error.invalid-response":
+    "服务器未返回 OpenAI 格式的模型列表。",
+  "settings.modelProvider.remoteModels.error.http":
+    "服务器返回 HTTP {status}，请检查 API Key 和 Base URL。",
   "settings.modelProvider.modelId": "模型 ID",
   "settings.modelProvider.modelDisplayName": "显示名称",
   "settings.modelProvider.modelApiFormat.anthropic": "Anthropic Messages",

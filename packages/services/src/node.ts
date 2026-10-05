@@ -8,6 +8,7 @@ import {
   createNodeProviderRuntimePathEnv,
   NodeModelSelectionConfigRepository,
   PERSONAL_PROVIDER_CONFIG_FILE_NAME,
+  type ZCodeBuiltinRefreshEvent,
 } from "@zcode/provider-node";
 import { getAppConfigDir as resolveAppConfigDir } from "./paths.js";
 import {
@@ -520,6 +521,7 @@ import {
   zcodeProviderAccountAccessSchema,
   ZCODE_VERSION,
   ZCODE_ENV,
+  ZCODE_REMOTE_UPDATES_ENABLED,
   buildRuntimeZCodeApiUrl,
 } from "@zcode/shared";
 
@@ -1510,25 +1512,33 @@ export function createLocalServices(options: {
   const clientConfigPlatform = resolveClientConfigPlatform();
   const providerConfigRuntime = createProviderConfigRuntime({
     zcodeBuiltinFilePath: options.zcodeBuiltinProviderConfigFilePath,
-    zcodeBuiltinEnvironment: {
-      environmentConfigRoot: resolveAppConfigDir(),
-      platform: clientConfigPlatform,
-      appVersion: ZCODE_VERSION,
-      resolveEndpointOrigin: resolveCurrentZCodeEndpointOrigin,
-      onRefreshResult: (event) => {
-        if (event.result === "updated")
-          providerConfigLog.info(undefined, "ZCode Built-in CDN 配置已更新", event);
-        else providerConfigLog.debug(undefined, "ZCode Built-in 刷新检查", event);
-      },
-      fetchRelease: (endpointOrigin, signal) =>
-        fetchZCodeBuiltinRemoteRelease({
-          apiClient,
-          endpointOrigin,
-          signal,
-          appVersion: ZCODE_VERSION,
-          platform: clientConfigPlatform,
-        }),
-    },
+    // Self-hosted build: without an Environment the runtime reads the bundled file as the
+    // Active path. That skips the vendor download and refresh timer, and also ignores any
+    // Active/LKG cache an earlier vendor build left behind, which could otherwise replace
+    // provider base URLs. See specs/self-hosted-build/remote-updates-and-litellm.md.
+    ...(ZCODE_REMOTE_UPDATES_ENABLED
+      ? {
+          zcodeBuiltinEnvironment: {
+            environmentConfigRoot: resolveAppConfigDir(),
+            platform: clientConfigPlatform,
+            appVersion: ZCODE_VERSION,
+            resolveEndpointOrigin: resolveCurrentZCodeEndpointOrigin,
+            onRefreshResult: (event: ZCodeBuiltinRefreshEvent) => {
+              if (event.result === "updated")
+                providerConfigLog.info(undefined, "ZCode Built-in CDN 配置已更新", event);
+              else providerConfigLog.debug(undefined, "ZCode Built-in 刷新检查", event);
+            },
+            fetchRelease: (endpointOrigin: string, signal: AbortSignal) =>
+              fetchZCodeBuiltinRemoteRelease({
+                apiClient,
+                endpointOrigin,
+                signal,
+                appVersion: ZCODE_VERSION,
+                platform: clientConfigPlatform,
+              }),
+          },
+        }
+      : {}),
     onZCodeBuiltinRefreshError: (error) => {
       providerConfigLog.warn(undefined, "ZCode Built-in Config 远端刷新失败", { error });
     },

@@ -7,6 +7,7 @@ import {
   type ProviderSettingsFormModel,
 } from "@/lib/providerSettingsFormTypes.js";
 import type { ModelConnectivityResult } from "@zcode/shared";
+import { supportsRemoteModelDiscovery } from "@zcode/services";
 import {
   isApiKeyAccess,
   type ProviderApiType,
@@ -853,6 +854,12 @@ export function InlineEditableProviderCard({
           onDeleteModel={handleDeleteModel}
           onAddModel={handleAddModel}
           onReorderModelIds={onReorderModelIds ? handleReorderModelIds : undefined}
+          remoteModelsBaseUrl={
+            supportsRemoteModelDiscovery(provider.config.api?.type) &&
+            isApiKeyAccess(provider.config.access)
+              ? (provider.config.api?.baseUrl ?? undefined)
+              : undefined
+          }
           settingsRevision={settingsRevision ?? 0}
         />
       </div>

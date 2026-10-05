@@ -8,7 +8,10 @@ export {
   type ModelSelectionViewInput,
   type ProviderSettingsProviderView,
   type ProviderSettingsView,
+  type ProviderRemoteModelsErrorCode,
+  type ProviderRemoteModelsResult,
 } from "./model-provider/providerFacadeServices.js";
+export { supportsRemoteModelDiscovery } from "./model-provider/providerRemoteModels.js";
 export {
   createAccountRequestAuthService,
   type IAccountRequestAuthService,

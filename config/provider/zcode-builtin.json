@@ -485,6 +485,24 @@
           }
         },
         {
+          "templateId": "litellm",
+          "templateNameMap": {
+            "zh-CN": "LiteLLM",
+            "en-US": "LiteLLM"
+          },
+          "config": {
+            "access": {
+              "type": "api-key",
+              "apiKeyManagementUrl": "https://docs.litellm.ai/docs/proxy/virtual_keys"
+            },
+            "api": {
+              "type": "openai-chat-completions",
+              "baseUrl": "http://localhost:4000/v1"
+            },
+            "builtinModelIds": []
+          }
+        },
+        {
           "templateId": "opencode-go-chat",
           "templateNameMap": {
             "zh-CN": "OpenCode Go (Chat)",

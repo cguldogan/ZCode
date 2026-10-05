@@ -73,6 +73,7 @@ import {
   DEFAULT_LOCALE,
   ZCODE_VERSION,
   ZCODE_TELEMETRY_ENABLED,
+  ZCODE_REMOTE_UPDATES_ENABLED,
   ZCODE_ARMS_RUM_ENDPOINT,
   buildZCodeEndpointUrls,
   resolveZCodeEndpointOrigin,
@@ -1943,7 +1944,8 @@ app.whenReady().then(async () => {
   // Preview 身份无论连接哪个后端都不自动更新：stable feed 上只分发正式 ZCode 安装包，
   // 不向 Preview 渠道提供更新。
   void initAutoUpdater({
-    enabled: ZCODE_PRODUCT_FLAVOR === "production",
+    // Self-hosted build: the updater stays unconfigured and every entry point fails closed.
+    enabled: ZCODE_REMOTE_UPDATES_ENABLED && ZCODE_PRODUCT_FLAVOR === "production",
     onBeforeQuitAndInstall: async () => {
       notifyStabilityLifecycle("update_install");
       await prepareAppQuit("auto-update quitAndInstall", "update-install");
@@ -2185,8 +2187,11 @@ app.whenReady().then(async () => {
   // 是面向打包发布客户端的安全门，对未打包 dev 运行时无意义。打包版 app.isPackaged === true，
   // gate 照常生效，对真实用户零影响。
   const skipForceUpdateForLocalDevRuntime = !app.isPackaged;
+  // Self-hosted build: a vendor minimalVersion must never block startup of a source build.
   const forceUpdateGuardResult =
-    ZCODE_PRODUCT_FLAVOR === "production" && !skipForceUpdateForLocalDevRuntime
+    ZCODE_REMOTE_UPDATES_ENABLED &&
+    ZCODE_PRODUCT_FLAVOR === "production" &&
+    !skipForceUpdateForLocalDevRuntime
       ? await maybeBlockStartupForForceUpdate({
           locale: currentApplicationLocale,
           logger,
@@ -2196,7 +2201,9 @@ app.whenReady().then(async () => {
           },
         })
       : { blocked: false };
-  if (ZCODE_PRODUCT_FLAVOR !== "production") {
+  if (!ZCODE_REMOTE_UPDATES_ENABLED) {
+    logger.info("[force-update] remote updates disabled for this build; skipping check");
+  } else if (ZCODE_PRODUCT_FLAVOR !== "production") {
     logger.info("[force-update] Preview 跳过远端强制升级检查");
   } else if (skipForceUpdateForLocalDevRuntime) {
     logger.info("[force-update] 本地 dev 构建（未打包）跳过远端强制升级检查");

@@ -12,7 +12,11 @@ import {
   ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV,
   type ZCodeBuiltinRefreshEvent,
 } from "@zcode/provider-node";
-import { resolveRuntimeZCodeEndpointOrigin, ZCODE_VERSION } from "@zcode/shared";
+import {
+  resolveRuntimeZCodeEndpointOrigin,
+  ZCODE_REMOTE_UPDATES_ENABLED,
+  ZCODE_VERSION,
+} from "@zcode/shared";
 import type { CliEnv } from "./env.js";
 
 export const SEA_ZCODE_BUILTIN_PROVIDER_CONFIG_ASSET_KEY = "zcode-provider/zcode-builtin.json";
@@ -74,6 +78,15 @@ export async function prepareCliProviderRuntimeEnv(
     }));
   const personalFilePath =
     explicitPersonal ?? join(dataBaseDir, ".zcode", "v2", PERSONAL_PROVIDER_CONFIG_FILE_NAME);
+  if (!ZCODE_REMOTE_UPDATES_ENABLED) {
+    // Self-hosted build: hand the bundled file to the runtime as the Active path and omit the
+    // bundled-file env, so no remote synchronizer is created and no Active/LKG cache (possibly
+    // written by a vendor build with remote provider config) can override it.
+    return {
+      [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: zcodeBuiltinFilePath,
+      [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: personalFilePath,
+    };
+  }
   const appVersion = options.appVersion ?? ZCODE_VERSION;
   const platform = options.platform ?? resolveZCodeBuiltinClientPlatform();
   const zcodeEndpointOrigin = resolveRuntimeZCodeEndpointOrigin(options.env);

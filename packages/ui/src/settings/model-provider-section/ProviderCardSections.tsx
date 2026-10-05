@@ -38,6 +38,7 @@ import { TECHNICAL_INPUT_ATTRIBUTES } from "@/lib/technicalInputAttributes.js";
 import { ApiKeyInput } from "./ApiKeyInput.js";
 import { ModelRowInput } from "./ProviderFormControls.js";
 import { PresetProviderApiKeyBanner } from "./PresetProviderApiKeyBanner.js";
+import { ProviderRemoteModelsButton } from "./ProviderRemoteModelsDialog.js";
 import { type ProviderModelDraftValues } from "@/settings/model-provider-section/ProviderModelMetadata.js";
 import { ProviderModelMetadataDialog } from "@/settings/model-provider-section/ProviderModelMetadataDialog.js";
 import {
@@ -355,6 +356,7 @@ export function ProviderModelsSection({
   onDeleteModel,
   onAddModel,
   onReorderModelIds,
+  remoteModelsBaseUrl,
   settingsRevision = 0,
 }: {
   providerId: string;
@@ -372,6 +374,8 @@ export function ProviderModelsSection({
   onModelEnabledChange?: (modelId: string, enabled: boolean) => void | Promise<void>;
   onAddModel: (model: ProviderSettingsFormModel) => void | Promise<void>;
   onReorderModelIds?: (modelIds: string[]) => void;
+  /** Saved base URL of an OpenAI-compatible provider; enables "Load models" when set. */
+  remoteModelsBaseUrl?: string;
   settingsRevision?: number;
 }) {
   const { intl } = useZCodeIntl();
@@ -458,6 +462,12 @@ export function ProviderModelsSection({
       setAddSaving(false);
     }
   }, [editor, onAddModel]);
+  const addRemoteModel = useCallback(
+    async (modelId: string) => {
+      await onAddModel({ ...createEmptyModel(), modelId, useRecommendedConfig: true });
+    },
+    [onAddModel],
+  );
   const addDraftErrorMessage = addDraftErrorField
     ? intl.formatMessage({
         id: `settings.modelProvider.modelMetadata.invalid.${addDraftErrorField}`,
@@ -470,17 +480,27 @@ export function ProviderModelsSection({
         <span className="text-ui-base text-foreground-subtle">
           {intl.formatMessage({ id: "settings.modelProvider.models" })}
         </span>
-        <Button
-          type="button"
-          variant="secondary"
-          size="default"
-          className="rounded-lg"
-          data-testid={TID_MODEL_PROVIDER_ADD_MODEL_BUTTON}
-          onClick={openAddDialog}
-        >
-          <Plus data-icon="inline-start" aria-hidden="true" />
-          {intl.formatMessage({ id: "settings.modelProvider.addModel" })}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {remoteModelsBaseUrl ? (
+            <ProviderRemoteModelsButton
+              providerId={providerId}
+              baseUrl={remoteModelsBaseUrl}
+              existingModelIds={models.map((model) => model.modelId)}
+              onAddModel={addRemoteModel}
+            />
+          ) : null}
+          <Button
+            type="button"
+            variant="secondary"
+            size="default"
+            className="rounded-lg"
+            data-testid={TID_MODEL_PROVIDER_ADD_MODEL_BUTTON}
+            onClick={openAddDialog}
+          >
+            <Plus data-icon="inline-start" aria-hidden="true" />
+            {intl.formatMessage({ id: "settings.modelProvider.addModel" })}
+          </Button>
+        </div>
       </div>
       {models.length > 0 ? (
         <div className="overflow-hidden rounded-lg border border-input-border bg-input">

@@ -3047,6 +3047,33 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.models": "Model list",
   "settings.modelProvider.modelsEmpty": "No models are configured. Add a model to use it in chat.",
   "settings.modelProvider.addModel": "Add model",
+  "settings.modelProvider.remoteModels.load": "Load models",
+  "settings.modelProvider.remoteModels.title": "Load models from server",
+  "settings.modelProvider.remoteModels.description":
+    "Models reported by {baseUrl}/models. Models already in the list are hidden.",
+  "settings.modelProvider.remoteModels.loading": "Loading models…",
+  "settings.modelProvider.remoteModels.empty":
+    "No new models. Every model on the server is already in the list.",
+  "settings.modelProvider.remoteModels.selectAll": "Select all ({count})",
+  "settings.modelProvider.remoteModels.add": "Add selected ({count})",
+  "settings.modelProvider.remoteModels.adding": "Adding {done} of {total}…",
+  "settings.modelProvider.remoteModels.retry": "Retry",
+  "settings.modelProvider.remoteModels.addFailed":
+    "Added {done} of {total} models. Stopped at {modelId}: {message}",
+  "settings.modelProvider.remoteModels.error.missing-base-url": "Save a valid base URL first.",
+  "settings.modelProvider.remoteModels.error.missing-api-key":
+    "Save an API key first. If the server has no auth, any placeholder works.",
+  "settings.modelProvider.remoteModels.error.provider-not-found": "This provider no longer exists.",
+  "settings.modelProvider.remoteModels.error.unsupported-api-type":
+    "Loading models needs an OpenAI-compatible API format.",
+  "settings.modelProvider.remoteModels.error.timeout":
+    "The server did not answer within 15 seconds.",
+  "settings.modelProvider.remoteModels.error.network":
+    "Could not reach the server. Check the base URL and that the server is running.",
+  "settings.modelProvider.remoteModels.error.invalid-response":
+    "The server did not return an OpenAI-style model list.",
+  "settings.modelProvider.remoteModels.error.http":
+    "The server answered HTTP {status}. Check the API key and base URL.",
   "settings.modelProvider.modelId": "Model ID",
   "settings.modelProvider.modelDisplayName": "Display name",
   "settings.modelProvider.modelApiFormat.anthropic": "Anthropic messages",

@@ -1355,6 +1355,14 @@ export function refreshAutoUpdaterReleaseChannel(
 ) {
   const nextChannel: ElectronReleaseChannel = receivePreviewUpdates ? "preview" : "stable";
 
+  // Bugfix: this entry only checked the packaged runtime, so with the updater disabled a
+  // settings change could still run checkForUpdates on the unconfigured electron-updater
+  // instance (its default feed is the packaged app-update.yml). Fail closed like the menu.
+  if (autoUpdaterDisabledForProductFlavor) {
+    logger.info(`[auto-update] skip ${reason}: updater disabled`);
+    return;
+  }
+
   if (!canUseAutoUpdaterInCurrentRuntime()) {
     logger.info(`[auto-update] skip ${reason}: not packaged`);
     return;
@@ -1776,6 +1784,14 @@ export function requestForceAutoUpdate(
   forceAutoUpdateLastLoggedProgressBucket = null;
   logger.info(`[force-update] 自动升级开始 reason=${reason}`);
   onStateChange({ kind: "checking" });
+
+  // Bugfix: same gap as the release-channel refresh; a disabled updater must not download.
+  if (autoUpdaterDisabledForProductFlavor) {
+    const message = "updater disabled";
+    logger.info(`[force-update] 自动升级跳过：${message}`);
+    onStateChange({ kind: "dev-skipped", message });
+    return dispose;
+  }
 
   if (!canUseAutoUpdaterInCurrentRuntime()) {
     const message = "not packaged";

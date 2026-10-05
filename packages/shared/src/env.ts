@@ -49,6 +49,14 @@ export const RUNTIME_ZCODE_DEBUG =
 // 功能保持可用；实际出网由各出口的运行时端点检查决定，未配置不上报。
 export const ZCODE_TELEMETRY_ENABLED: boolean = true;
 
+/**
+ * Self-hosted build policy (specs/self-hosted-build/remote-updates-and-litellm.md).
+ * false = no app auto-update, no force-update gate, and no runtime download of the
+ * built-in provider config; the bundled config file is the only source. Deliberately
+ * a build-time constant (not an env var) so a built binary cannot be switched back on.
+ */
+export const ZCODE_REMOTE_UPDATES_ENABLED: boolean = false;
+
 /** 数仓事件上报端点：由运行时环境变量提供，未配置即停用，构建产物不内嵌。 */
 export const ZCODE_TELEMETRY_REPORT_ENDPOINT =
   typeof process !== "undefined" ? (process.env.ZCODE_TELEMETRY_REPORT_ENDPOINT ?? "") : "";

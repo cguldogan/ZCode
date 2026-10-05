@@ -8,6 +8,7 @@ import {
 import {
   isBuiltinModelProviderId,
   resolveRuntimeZCodeEndpointOrigin,
+  ZCODE_REMOTE_UPDATES_ENABLED,
   ZCODE_VERSION,
 } from "@zcode/shared";
 import { dirname, join } from "node:path";
@@ -56,9 +57,12 @@ export async function startProcessProviderRegistryRuntime(
     ? (options.standalone.credentialStore ?? createSharedZCodeCredentialStore({ env: { ...env } }))
     : undefined;
   let standaloneAccount: AccountProviderService | undefined;
-  const bundledFile = options.standalone
-    ? env[ZCODE_BUILTIN_PROVIDER_BUNDLED_CONFIG_FILE_ENV]?.trim()
-    : undefined;
+  // Self-hosted build: never create the remote synchronizer, even if a caller still passes the
+  // bundled-file env. See specs/self-hosted-build/remote-updates-and-litellm.md.
+  const bundledFile =
+    options.standalone && ZCODE_REMOTE_UPDATES_ENABLED
+      ? env[ZCODE_BUILTIN_PROVIDER_BUNDLED_CONFIG_FILE_ENV]?.trim()
+      : undefined;
   const runtime = new NodeProviderRegistryRuntime({
     ...paths,
     ...(bundledFile

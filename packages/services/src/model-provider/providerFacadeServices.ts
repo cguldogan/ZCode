@@ -19,7 +19,17 @@ import {
 import { createServiceDescriptor } from "../descriptors.js";
 import type { ModelConnectivityResult } from "@zcode/shared";
 import { createServiceLogger } from "../logger/serviceLogger.js";
+import {
+  listOpenAiCompatibleModels,
+  type ProviderRemoteModelsInput,
+  type ProviderRemoteModelsResult,
+} from "./providerRemoteModels.js";
 
+export type {
+  ProviderRemoteModelsErrorCode,
+  ProviderRemoteModelsInput,
+  ProviderRemoteModelsResult,
+} from "./providerRemoteModels.js";
 export type {
   ProviderSettingsProviderView,
   ModelSelectionView,
@@ -68,6 +78,8 @@ export interface IProviderSettingsService {
   testModelConnectivity(
     input: ProviderSettingsConnectivityRequest,
   ): Promise<ModelConnectivityResult>;
+  /** Lists model ids from the saved base URL of an OpenAI-compatible provider (e.g. LiteLLM). */
+  listRemoteModels(input: ProviderRemoteModelsInput): Promise<ProviderRemoteModelsResult>;
 }
 
 export const IProviderSettingsService = createServiceDescriptor<IProviderSettingsService>(
@@ -205,6 +217,18 @@ export function createProviderSettingsService(
         providerId: input.providerId,
         modelId: input.modelId,
       });
+    },
+    listRemoteModels: async (input) => {
+      await ensureReady();
+      // Pending saves of base URL / key must land first; discovery reads only saved config.
+      await facade.waitForProviderOperations(input.providerId);
+      const provider = facade
+        .getView()
+        .providers.find((item) => item.providerId === input.providerId);
+      if (!provider) {
+        return { ok: false, code: "provider-not-found", message: "Provider not found" };
+      }
+      return listOpenAiCompatibleModels({ config: provider.effectiveConfig });
     },
   };
 }
