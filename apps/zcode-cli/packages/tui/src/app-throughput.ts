@@ -1,4 +1,5 @@
 import { SessionEventType } from "@zcode/contracts";
+import { stringField } from "./state.js";
 import React from "react";
 import { usageFromPayload } from "./app-event-data.js";
 
@@ -82,6 +83,9 @@ export function trackModelThroughputEvent(
 ): void {
   const { setThroughput, throughputTracker: tracker } = handlers;
   if (!tracker || !setThroughput) return;
+  // Sidecar requests (title, compaction summary) would reset or report on the main stream's timing.
+  const querySource = stringField(payload, "querySource");
+  if (querySource !== undefined && querySource !== "main_turn") return;
   if (eventType === SessionEventType.ModelRequest) {
     markModelRequestStarted(tracker, nowMs);
   } else if (eventType === SessionEventType.ModelStreaming) {

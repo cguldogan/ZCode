@@ -1,5 +1,9 @@
 import {
+  getModelUsageContextTokens,
+  isMainTurnModelCompletion,
   SessionEventType,
+  type ModelCompletePayload,
+  type ModelUsage,
   type ModelUsageSummary,
   type SessionEvent,
   type TodoItem,
@@ -309,16 +313,17 @@ function applyModelCompleteEvent(
   copy: TuiCopy,
 ): void {
   const nextUsage = usageFromPayload(payload);
-  const contextWindow = contextWindowFromPayload(payload);
-  if (contextWindow !== undefined) setContextUsage((current) => ({ ...current, contextWindow }));
-  if (nextUsage) {
-    setUsage(nextUsage);
-    if (nextUsage.inputTokens > 0) {
-      setContextUsage((current) => ({
-        ...current,
-        contextUsed: nextUsage.inputTokens,
-      }));
-    }
+  if (nextUsage) setUsage(nextUsage);
+  // Same rule as the session reducer: only the main conversation's request defines the context
+  // meter, measured as input + output (what the next request carries), not title/compact sidecars.
+  if (isMainTurnModelCompletion(payload as unknown as ModelCompletePayload)) {
+    const contextWindow = contextWindowFromPayload(payload);
+    const contextUsed = getModelUsageContextTokens(payload.usage as ModelUsage | undefined);
+    setContextUsage((current) => ({
+      ...current,
+      ...(contextWindow !== undefined ? { contextWindow } : {}),
+      ...(contextUsed !== undefined && contextUsed > 0 ? { contextUsed } : {}),
+    }));
   }
   setStatus(
     nextUsage

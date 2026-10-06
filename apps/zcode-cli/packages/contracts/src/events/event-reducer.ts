@@ -57,7 +57,8 @@ import {
   initialSessionProjection,
 } from "./event-reducer-helpers.js";
 
-function shouldModelCompleteUpdateContextUsed(payload: ModelCompletePayload): boolean {
+/** Whether a model_complete belongs to the visible main conversation (not title, compaction, …). */
+export function isMainTurnModelCompletion(payload: ModelCompletePayload): boolean {
   if (payload.querySource !== undefined) {
     return payload.querySource === "main_turn";
   }
@@ -212,7 +213,7 @@ export class EventReducer {
       // 输入栏 context usage 只代表主会话发给 provider 的最新上下文。
       // 标题生成、压缩摘要、子代理和工具内部模型调用都不是当前主 session 的可见上下文，
       // 如果用它们的 usage 覆盖 projection，UI 会显示成 89/1m 这类 sidecar 小请求。
-      if (!shouldModelCompleteUpdateContextUsed(payload)) {
+      if (!isMainTurnModelCompletion(payload)) {
         return {
           ...p,
           updatedAt: e.timestamp,

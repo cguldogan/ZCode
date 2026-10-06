@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { SessionEventType } from "@zcode/contracts";
+import { applySessionEventToState } from "../src/app-events.js";
 import { inputStatusLocation } from "../src/app-input-status.js";
 import { isExitCommand } from "../src/app-submit-controller.js";
 import {
@@ -92,4 +93,67 @@ test("main-turn model completion replaces the 200K placeholder context window", 
   };
   const projection = apply({ ...initialSessionProjection } as never, event as never);
   assert.equal(projection.contextWindow, 1_000_000);
+});
+
+test("sidecar requests (e.g. title generation) do not reset or report main-turn throughput", () => {
+  const reported: ModelThroughput[] = [];
+  const handlers = {
+    setThroughput: (value: ModelThroughput) => reported.push(value),
+    throughputTracker: createModelThroughputTracker(),
+  };
+  trackModelThroughputEvent(SessionEventType.ModelRequest, { querySource: "main_turn" }, handlers, 0);
+  trackModelThroughputEvent(SessionEventType.ModelStreaming, {}, handlers, 1_000);
+  trackModelThroughputEvent(SessionEventType.ModelRequest, { querySource: "title" }, handlers, 1_500);
+  trackModelThroughputEvent(
+    SessionEventType.ModelComplete,
+    { querySource: "title", usage: { outputTokens: 5 } },
+    handlers,
+    1_600,
+  );
+  trackModelThroughputEvent(
+    SessionEventType.ModelComplete,
+    { querySource: "main_turn", usage: { outputTokens: 100 } },
+    handlers,
+    3_000,
+  );
+  assert.deepEqual(
+    reported.map((item) => item.tokensPerSecond),
+    [50],
+  );
+});
+
+test("context meter counts input + output of main-turn completions and ignores sidecars", () => {
+  let context: { contextUsed?: number; contextWindow?: number } = { contextWindow: 200_000 };
+  const noop = () => {};
+  const handlers = {
+    assistantMessageIdsByToolCallId: new Map<string, string>(),
+    setActiveTurnId: noop,
+    setCacheStats: noop,
+    setContextUsage: (action: unknown) => {
+      context = typeof action === "function" ? (action as (c: typeof context) => typeof context)(context) : (action as typeof context);
+    },
+    setLastError: noop,
+    setLiveModelText: noop,
+    setMessages: noop,
+    setModel: noop,
+    setNetworkRequests: noop,
+    setStatus: noop,
+    setTodos: noop,
+    setUsage: noop,
+    toolNamesById: new Map<string, string>(),
+  };
+  const complete = (payload: Record<string, unknown>) =>
+    applySessionEventToState(
+      { payload, sessionId: "s", timestamp: new Date(), type: SessionEventType.ModelComplete } as never,
+      handlers as never,
+    );
+  complete({
+    contextWindow: 1_000_000,
+    querySource: "main_turn",
+    stopReason: "stop",
+    usage: { inputTokens: 30_000, outputTokens: 2_000, totalTokens: 32_000 },
+  });
+  assert.deepEqual(context, { contextUsed: 32_000, contextWindow: 1_000_000 });
+  complete({ querySource: "title", stopReason: "stop", usage: { inputTokens: 200, outputTokens: 10 } });
+  assert.deepEqual(context, { contextUsed: 32_000, contextWindow: 1_000_000 });
 });
