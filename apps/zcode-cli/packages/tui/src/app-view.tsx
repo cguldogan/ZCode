@@ -14,6 +14,7 @@ import type { FileMentionState } from "./app-file-mentions.js";
 import { EffortSuggestionPanel } from "./app-effort-suggestion-panel.js";
 import { InputPane, type PromptInputEditor } from "./app-input-pane.js";
 import { InputActiveStatus } from "./app-input-status.js";
+import type { ModelThroughput } from "./app-throughput.js";
 import { QueuedInputPanel } from "./app-queued-inputs.js";
 import { ModeSuggestionPanel } from "./app-mode-suggestion-panel.js";
 import { ModelSuggestionPanel } from "./app-model-suggestion-panel.js";
@@ -94,6 +95,7 @@ export function AppView(props: {
   toggleSidebarSection?: (section: SidebarSectionId) => boolean;
   traceId?: string;
   terminalWidth: number;
+  throughput?: ModelThroughput;
   usage?: ModelUsageSummary;
   workflowCardsByToolCallId?: ReadonlyMap<string, TuiWorkflowCard>;
   expandedWorkflowRunIds?: ReadonlySet<string>;
@@ -226,6 +228,9 @@ export function AppView(props: {
               slashSelection: props.slashSelection,
               submitValue: readOnly ? () => {} : props.submitValue,
               thoughtLevel: props.thoughtLevel,
+              throughput: props.throughput,
+              workspaceDirectory: props.options.workspaceDirectory,
+              workspaceGitBranch: props.options.workspaceGitBranch,
             }),
     ),
   );
@@ -257,6 +262,9 @@ function ComposerInputArea(props: {
   slashSelection?: SlashSelectionState;
   submitValue: (value: string) => void;
   thoughtLevel: string;
+  throughput?: ModelThroughput;
+  workspaceDirectory?: string;
+  workspaceGitBranch?: string;
 }): React.ReactElement {
   return h(
     React.Fragment,
@@ -332,6 +340,9 @@ function ComposerInputArea(props: {
       contentWidth: props.contentWidth,
       contextUsage: props.contextUsage,
       copy: props.copy,
+      throughput: props.throughput,
+      workspaceDirectory: props.workspaceDirectory,
+      workspaceGitBranch: props.workspaceGitBranch,
     }),
   );
 }

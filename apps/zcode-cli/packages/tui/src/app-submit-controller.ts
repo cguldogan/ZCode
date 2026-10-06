@@ -20,6 +20,7 @@ export function useSubmitValue(input: {
   draftAttachmentsRef: React.MutableRefObject<DraftAttachment[]>;
   emptyPromptStatus: string;
   messageInsertIndex: number;
+  onExit?: (code: number) => void;
   options: TuiOptions;
   requestPermission: TuiRequestPermission;
   resolveSubmittedText: (submittedValue: string) => string;
@@ -43,6 +44,13 @@ export function useSubmitValue(input: {
       const modelSelection = input.resolveSubmittedModel?.(submittedValue);
       if (!text) {
         input.setStatus(input.emptyPromptStatus);
+        return;
+      }
+
+      // Checked before the busy branch so /exit mid-turn exits instead of queueing as steer input.
+      if (input.onExit && isExitCommand(text)) {
+        input.turnRef.current?.abort();
+        input.onExit(0);
         return;
       }
 
@@ -91,4 +99,10 @@ export function useSubmitValue(input: {
     },
     [input],
   );
+}
+
+const EXIT_COMMANDS = new Set(["/exit", "/quit"]);
+
+export function isExitCommand(text: string): boolean {
+  return EXIT_COMMANDS.has(text.trim().toLowerCase());
 }

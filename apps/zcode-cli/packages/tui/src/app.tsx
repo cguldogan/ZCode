@@ -18,7 +18,7 @@ import { useModeCommandController } from "./app-mode-command.js";
 import { useModelCommandController } from "./app-model-command.js";
 import { useSidebarController } from "./app-sidebar-layout.js";
 import { createSelectionState } from "./app-selection-state.js";
-import { resolveComposerSubmittedText } from "./app-submit-resolver.js";
+import { useComposerSubmittedTextResolver } from "./app-submit-resolver.js";
 import type {
   ApprovalPrompt,
   CacheStats,
@@ -36,6 +36,7 @@ import { useSessionEventApplier } from "./app-session-event-handler.js";
 import { useTuiWorkflowRuns } from "./app-workflow-controller.js";
 import { useTuiApplyResult } from "./app-result.js";
 import { useSubagents } from "./app-subagents.js";
+import { useModelThroughput } from "./app-throughput.js";
 import type { TuiOptions } from "./types.js";
 
 type TuiAppProps = {
@@ -85,6 +86,7 @@ export function TuiApp({
   const [contextUsage, setContextUsage] = useState<ContextUsage>({});
   const [cacheStats, setCacheStats] = useState<CacheStats | undefined>();
   const [usage, setUsage] = useState<ModelUsageSummary | undefined>();
+  const modelThroughput = useModelThroughput();
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [networkRequests, setNetworkRequests] = useState<NetworkRequest[]>([]);
   const [modifiedFiles, setModifiedFiles] = useState<ModifiedFileStat[]>([]);
@@ -214,6 +216,7 @@ export function TuiApp({
     setStatus,
     setTodos,
     setUsage,
+    ...modelThroughput.handlers,
     setWorkflowMirror: workflowRuns.setMirror,
     assistantMessageIdsByToolCallId: assistantMessageIdsByToolCallIdRef.current,
     modifiedFileToolCallIds: modifiedFileToolCallIdsRef.current,
@@ -226,22 +229,13 @@ export function TuiApp({
     [],
   );
 
-  const resolveSubmittedText = useCallback(
-    (submittedValue: string) => {
-      const modelOption = modelCommand.selectedOption(submittedValue);
-      const effortOption = modelOption ? undefined : effortCommand.selectedOption(submittedValue);
-      return resolveComposerSubmittedText({
-        effortOption,
-        modeOption:
-          modelOption || effortOption ? undefined : modeCommand.selectedOption(submittedValue),
-        modelOption,
-        slashCommands: filteredSlashCommands,
-        slashSelection,
-        submittedValue,
-      });
-    },
-    [effortCommand, filteredSlashCommands, modeCommand, modelCommand, slashSelection],
-  );
+  const resolveSubmittedText = useComposerSubmittedTextResolver({
+    effortCommand,
+    modeCommand,
+    modelCommand,
+    slashCommands: filteredSlashCommands,
+    slashSelection,
+  });
 
   const submitValue = useSubmitValue({
     activeTurnId,
@@ -251,6 +245,7 @@ export function TuiApp({
     draftAttachmentsRef,
     emptyPromptStatus: copy.tui.input.typePrompt,
     messageInsertIndex: messages.length,
+    onExit,
     options,
     requestPermission,
     resolveSubmittedText,
@@ -412,6 +407,7 @@ export function TuiApp({
     toggleSidebarSection: sidebar.toggleSidebarSection,
     traceId,
     terminalWidth: sidebar.terminalWidth,
+    throughput: modelThroughput.throughput,
     usage,
     workflowCardsByToolCallId: workflowRuns.cardsByToolCallId,
     expandedWorkflowRunIds: workflowRuns.expandedRunIds,

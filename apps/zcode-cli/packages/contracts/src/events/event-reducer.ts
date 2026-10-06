@@ -221,9 +221,16 @@ export class EventReducer {
       // AI SDK v6 的 provider input 已经是 total input（含 cache read/write）；
       // 这里通过统一 helper 计算 context used，避免各处重复理解 cache breakdown。
       const contextUsed = getModelUsageContextTokens(payload.usage);
+      // Main-turn completions carry the executing model's window; without it the projection keeps
+      // the 200K placeholder from initialSessionProjection (CLI sessions never emit session_created).
+      const contextWindow =
+        typeof payload.contextWindow === "number" && payload.contextWindow > 0
+          ? payload.contextWindow
+          : undefined;
       return {
         ...p,
         ...(contextUsed !== undefined ? { contextUsed } : {}),
+        ...(contextWindow !== undefined ? { contextWindow } : {}),
         updatedAt: e.timestamp,
       };
     },

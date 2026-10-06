@@ -29,9 +29,10 @@ import { DEFAULT_TUI_COPY } from "./app-locale.js";
 import { removeQueuedInputs, upsertQueuedInput } from "./app-queued-inputs.js";
 import { applyCompactTimelineEvent, applyCompactTurnErrorEvent } from "./app-compact-timeline.js";
 import { applyWorkflowProgressEvent, type WorkflowMirrorSetter } from "./app-workflow-events.js";
+import { trackModelThroughputEvent, type ModelThroughputHandlers } from "./app-throughput.js";
 import { asRecord, formatNumber, numberField, stringField } from "./state.js";
 
-type SessionEventHandlers = {
+type SessionEventHandlers = Partial<ModelThroughputHandlers> & {
   setActiveTurnId: (turnId: TurnId | undefined) => void;
   setCacheStats: React.Dispatch<React.SetStateAction<CacheStats | undefined>>;
   setContextUsage: React.Dispatch<React.SetStateAction<ContextUsage>>;
@@ -59,6 +60,7 @@ export function applySessionEventToState(
   copy: TuiCopy = DEFAULT_TUI_COPY,
 ): void {
   const payload = asRecord(event.payload);
+  trackModelThroughputEvent(event.type, payload, handlers);
 
   switch (event.type) {
     case SessionEventType.SessionCreated:
@@ -307,6 +309,8 @@ function applyModelCompleteEvent(
   copy: TuiCopy,
 ): void {
   const nextUsage = usageFromPayload(payload);
+  const contextWindow = contextWindowFromPayload(payload);
+  if (contextWindow !== undefined) setContextUsage((current) => ({ ...current, contextWindow }));
   if (nextUsage) {
     setUsage(nextUsage);
     if (nextUsage.inputTokens > 0) {

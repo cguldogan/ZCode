@@ -1,4 +1,5 @@
 import type { TuiCopy } from "@zcode/i18n";
+import { homedir } from "node:os";
 import React from "react";
 import type { ContextUsage } from "./app-model.js";
 import { DEFAULT_TUI_COPY } from "./app-locale.js";
@@ -6,6 +7,7 @@ import { palette } from "./app-model.js";
 import { modelDisplayParts } from "./app-model-ref.js";
 import { spinnerFrame, useSpinnerFrame } from "./app-motion.js";
 import { displayWidth, truncateDisplay } from "./app-terminal-width.js";
+import { formatTokensPerSecond, type ModelThroughput } from "./app-throughput.js";
 
 const h = React.createElement as (
   type: React.ElementType | string,
@@ -26,6 +28,17 @@ const TOKEN_COUNT_KILO = 1_000;
 const TOKEN_COUNT_MEGA = TOKEN_COUNT_KILO * TOKEN_COUNT_KILO;
 const TOKEN_COUNT_DECIMAL_PLACES = 1;
 
+const STATUS_SEGMENT_SEPARATOR = " · ";
+const STATUS_GIT_BRANCH_PREFIX = "⎇ ";
+
+type InputStatusRowOptions = {
+  contentWidth?: number;
+  contextUsage?: ContextUsage;
+  throughput?: ModelThroughput;
+  workspaceDirectory?: string;
+  workspaceGitBranch?: string;
+};
+
 type InputComposerStatusParts = {
   model: string;
   provider: string;
@@ -34,36 +47,25 @@ type InputComposerStatusParts = {
 
 export function InputActiveStatus({
   active,
-  contentWidth,
-  contextUsage,
   copy = DEFAULT_TUI_COPY,
   frameMs,
-}: {
+  ...options
+}: InputStatusRowOptions & {
   active: boolean;
-  contentWidth?: number;
-  contextUsage?: ContextUsage;
   copy?: TuiCopy;
   frameMs?: number;
 }): React.ReactElement {
   if (frameMs !== undefined || !active) {
-    return inputActiveStatusRow(copy, active ? spinnerFrame(frameMs ?? 0) : undefined, {
-      contentWidth,
-      contextUsage,
-    });
+    return inputActiveStatusRow(copy, active ? spinnerFrame(frameMs ?? 0) : undefined, options);
   }
-  return h(InputActiveStatusContent, { contentWidth, contextUsage, copy });
+  return h(InputActiveStatusContent, { ...options, copy });
 }
 
 function InputActiveStatusContent({
-  contentWidth,
-  contextUsage,
   copy,
-}: {
-  contentWidth?: number;
-  contextUsage?: ContextUsage;
-  copy: TuiCopy;
-}): React.ReactElement {
-  return inputActiveStatusRow(copy, useSpinnerFrame(true), { contentWidth, contextUsage });
+  ...options
+}: InputStatusRowOptions & { copy: TuiCopy }): React.ReactElement {
+  return inputActiveStatusRow(copy, useSpinnerFrame(true), options);
 }
 
 export function InputComposerStatus({
@@ -85,16 +87,23 @@ export function InputComposerStatus({
 function inputActiveStatusRow(
   copy: TuiCopy,
   frame?: string,
-  options: { contentWidth?: number; contextUsage?: ContextUsage } = {},
+  options: InputStatusRowOptions = {},
 ): React.ReactElement {
   const contextBadge = fitStatusContextBadge(
-    inputContextUsageBadge(options.contextUsage),
+    inputStatusMetricsBadge(options),
     activeStatusContextBadgeWidth({
       contentWidth: options.contentWidth,
       copy,
       frame,
     }),
   );
+  // The busy hint owns the left side while a turn runs; otherwise show where the session works.
+  const location = frame
+    ? undefined
+    : fitStatusLocation(
+        inputStatusLocation(options.workspaceDirectory, options.workspaceGitBranch),
+        statusLocationWidth(options.contentWidth, contextBadge),
+      );
   return h(
     "box",
     {
@@ -118,6 +127,7 @@ function inputActiveStatusRow(
           h("text", { style: { fg: palette.muted } }, copy.input.activeStatusHint),
         )
       : null,
+    location ? h("text", { style: { fg: palette.muted, flexShrink: 1 } }, location) : null,
     contextBadge ? h("box", { style: { flexGrow: 1, minWidth: 1 } }) : null,
     contextBadge ? h("text", { style: { fg: palette.muted, flexShrink: 0 } }, contextBadge) : null,
   );
@@ -183,6 +193,49 @@ function inputContextUsageBadge(contextUsage?: ContextUsage): string | undefined
   if (!validContextWindow(window)) return usedLabel;
 
   return `${usedLabel} (${formatComposerPercent(used / window)})`;
+}
+
+/** Right-hand metrics: last model output speed, then context usage. */
+function inputStatusMetricsBadge(options: InputStatusRowOptions): string | undefined {
+  const segments = [
+    formatTokensPerSecond(options.throughput),
+    inputContextUsageBadge(options.contextUsage),
+  ].filter((segment): segment is string => segment !== undefined);
+  return segments.length > 0 ? segments.join(STATUS_SEGMENT_SEPARATOR) : undefined;
+}
+
+export function inputStatusLocation(
+  workspaceDirectory?: string,
+  workspaceGitBranch?: string,
+  home = homedir(),
+): string | undefined {
+  const directory = workspaceDirectory?.trim()
+    ? abbreviateHomeDirectory(workspaceDirectory.trim(), home)
+    : undefined;
+  const branch = workspaceGitBranch?.trim()
+    ? `${STATUS_GIT_BRANCH_PREFIX}${workspaceGitBranch.trim()}`
+    : undefined;
+  const segments = [directory, branch].filter((segment): segment is string => !!segment);
+  return segments.length > 0 ? segments.join(" ") : undefined;
+}
+
+function abbreviateHomeDirectory(directory: string, home: string): string {
+  if (!home || home === "/") return directory;
+  if (directory === home) return "~";
+  return directory.startsWith(`${home}/`) ? `~${directory.slice(home.length)}` : directory;
+}
+
+function statusLocationWidth(contentWidth: number | undefined, metricsBadge?: string): number {
+  const rowWidth = normalizeComposerStatusContentWidth(contentWidth);
+  const metricsWidth = metricsBadge
+    ? displayWidth(metricsBadge) + ACTIVE_STATUS_CONTEXT_SPACER_WIDTH
+    : 0;
+  return rowWidth - ACTIVE_STATUS_HORIZONTAL_PADDING_WIDTH - metricsWidth;
+}
+
+function fitStatusLocation(location: string | undefined, maxWidth: number): string | undefined {
+  if (location === undefined || maxWidth < STATUS_MIN_CONTEXT_WIDTH) return undefined;
+  return truncateDisplay(location, Math.floor(maxWidth));
 }
 
 function composerStatusMetadataWidth(contentWidth?: number): number {
