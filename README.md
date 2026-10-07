@@ -32,6 +32,45 @@ merged (`git remote upstream` → `zai-org/ZCode`, push disabled).
 | Web / ZCode CLI distribution | Terminal and browser workspace; packages the TUI, Web client, backend, and Agent together | `pnpm dev:web`                 |
 | Agent CLI                    | The `zcode` terminal interface, which also provides the Agent runtime for Desktop and Web | `pnpm --filter @zcode/cli dev` |
 
+## Downloads & CI
+
+Unsigned builds are published on the [Releases](../../releases) page and on the project's
+GitHub Pages download site (`https://<owner>.github.io/<repo>/`). Stable links, with
+`<owner>/<repo>` being this repository:
+
+| Build                         | Link                                                                |
+| ----------------------------- | ------------------------------------------------------------------- |
+| Newest `main` build (rolling) | `https://github.com/<owner>/<repo>/releases/download/latest/<file>` |
+| A versioned release           | `https://github.com/<owner>/<repo>/releases/download/vX.Y.Z/<file>` |
+| Newest versioned release      | `https://github.com/<owner>/<repo>/releases/latest/download/<file>` |
+
+`<file>` is one of `ZCode-Beyond-mac-arm64.dmg` / `.zip`, `ZCode-Beyond-mac-x64.dmg` / `.zip`,
+`ZCode-Beyond-win-x64-setup.exe`, `ZCode-Beyond-linux-x64.AppImage` / `.deb` / `.rpm` /
+`.pkg.tar.zst`, `zcode-beyond-cli-<mac|linux>-<x64|arm64>.tar.gz`,
+`zcode-beyond-cli-win-<x64|arm64>.zip` (single-executable CLI, no Node.js needed),
+`zcode-beyond-cli-node.tar.gz` (CLI + `zcode --web`, needs Node.js 24), each with a
+`.sha256`, plus `SHA256SUMS.txt`. Only macOS arm64 is guaranteed per build; other
+platforms are best-effort and are missing from a release when their build failed.
+
+How releases are made (GitHub Actions, details in
+[`specs/self-hosted-build/ci-release.md`](specs/self-hosted-build/ci-release.md)):
+
+- `ci.yml`: typecheck, lint, architecture check, CLI typecheck and tests on every push and pull request.
+- `release.yml`: a push to `main` rebuilds everything and updates the rolling `latest`
+  prerelease in place; pushing a tag `vX.Y.Z` (`git tag v1.0.0 && git push origin v1.0.0`)
+  creates a normal release with generated notes. Manual runs build only unless "publish" is ticked.
+- `pages.yml`: deploys `site/` when it, the logo or `package.json` changes on `main`.
+
+One-time setup for the repository owner:
+
+1. **Actions tab** → enable workflows (GitHub disables them on forks until you do).
+2. **Settings → Pages → Build and deployment → Source: GitHub Actions**, then run the
+   **Pages** workflow once (Actions → Pages → Run workflow).
+3. Optional: **Settings → Actions → General → Workflow permissions** can stay on
+   "Read repository contents"; each job requests the write scopes it needs. If an
+   organization policy forbids raising them, choose "Read and write permissions".
+4. After renaming the repository, run the Pages workflow again so the site links use the new name.
+
 ## Updates
 
 - 2026-9-23: Updated to ZCode v3.14.3.
@@ -168,10 +207,10 @@ pnpm bundle:desktop -- --help
 
 The default target is macOS arm64, and the default output directory is `packages/desktop/dist/`. `--os` accepts `mac`, `win`, or `linux`; `--arch` accepts `x64` or `arm64`. Packaging and signing require the tools and configuration for the target platform.
 
-Install: open the DMG and drag ZCode into "Applications". Local builds are unsigned; if macOS blocks the first launch, run:
+Install: open the DMG and drag ZCode Beyond into "Applications". Local builds are unsigned; if macOS blocks the first launch, run:
 
 ```bash
-sudo xattr -rd com.apple.quarantine /Applications/ZCode.app
+sudo xattr -rd com.apple.quarantine "/Applications/ZCode Beyond.app"
 ```
 
 ### ZCode CLI distribution
