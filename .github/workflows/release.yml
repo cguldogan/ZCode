@@ -1,4 +1,4 @@
-# Builds desktop installers and CLI packages, then publishes them.
+# Runs the CI checks, builds desktop installers and CLI packages, then publishes them.
 #   push to main      -> rolling prerelease, tag "latest"
 #   push of a v* tag  -> versioned release
 #   workflow_dispatch -> build only, unless "publish" is ticked
@@ -13,7 +13,6 @@ on:
     paths-ignore:
       - "**/*.md"
       - "site/**"
-      - ".github/workflows/ci.yml"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
     inputs:
@@ -46,6 +45,12 @@ defaults:
     shell: bash
 
 jobs:
+  checks:
+    # The CI checks for this commit (ci.yml does not trigger on main or tags itself).
+    # Builds run in parallel; publish waits for both.
+    name: Checks
+    uses: ./.github/workflows/ci.yml
+
   desktop:
     name: Desktop ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
@@ -250,10 +255,12 @@ jobs:
 
   publish:
     name: Publish
-    needs: [desktop, cli]
+    needs: [checks, desktop, cli]
     # Runs even when best-effort jobs failed; the required files are checked below.
+    # A commit that fails the checks is never published.
     if: >-
       !cancelled() &&
+      needs.checks.result == 'success' &&
       (github.event_name == 'push' || inputs.publish) &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-24.04

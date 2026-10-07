@@ -56,8 +56,8 @@ platforms are best-effort and are missing from a release when their build failed
 How releases are made (GitHub Actions, details in
 [`specs/self-hosted-build/ci-release.md`](specs/self-hosted-build/ci-release.md)):
 
-- `ci.yml`: typecheck, lint, architecture check, CLI typecheck and tests on every push and pull request.
-- `release.yml`: a push to `main` rebuilds everything and updates the rolling `latest`
+- `ci.yml`: typecheck, lint, architecture check, CLI typecheck and tests on branches and pull requests.
+- `release.yml`: a push to `main` runs the same checks (as its `Checks` job), rebuilds everything and updates the rolling `latest`
   prerelease in place; pushing a tag `vX.Y.Z` (`git tag v1.0.0 && git push origin v1.0.0`)
   creates a normal release with generated notes. Manual runs build only unless "publish" is ticked.
 - `pages.yml`: deploys `site/` when it, the logo or `package.json` changes on `main`.

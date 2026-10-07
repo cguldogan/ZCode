@@ -10,12 +10,18 @@ Pages. No third-party build service, signing service or mirror is involved.
 
 | Workflow      | Triggers                                                                                             | Writes                       |
 | ------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------- |
-| `ci.yml`      | every `push`, every `pull_request`, `workflow_dispatch`                                              | nothing (`contents: read`)   |
+| `ci.yml`      | `push` to any branch except `main`, every `pull_request`, `workflow_dispatch`, `workflow_call`       | nothing (`contents: read`)   |
 | `release.yml` | `push` to `main`, `push` of a `v*` tag, `workflow_dispatch`                                          | releases (`contents: write`) |
 | `pages.yml`   | `push` to `main` touching `site/**`, the logo, `package.json`, or its own files; `workflow_dispatch` | Pages deployment             |
 
-- `release.yml` ignores pushes to `main` that only change Markdown, `site/**`,
-  `ci.yml` or `pages.yml` (path filters do not apply to tag pushes).
+- One commit, one pipeline: on `main` and `v*` tags the checks run inside the
+  Release run (job `checks`, which calls `ci.yml` via `workflow_call`), so a push
+  never starts a separate CI run next to Release. `ci.yml` keeps its own triggers
+  for feature branches and pull requests. Builds run in parallel with the checks;
+  publishing waits for both.
+- `release.yml` ignores pushes to `main` that only change Markdown, `site/**`
+  or `pages.yml` (path filters do not apply to tag pushes); such pushes run no
+  checks, since nothing they change is typechecked, linted or tested.
 - `workflow_dispatch` on `release.yml` only builds (artifacts kept 14 days)
   unless the `publish` input is ticked; it then publishes like a push of the
   same ref (`main` → rolling, `v*` tag → versioned). Other refs never publish.
@@ -101,6 +107,8 @@ root `package.json` version produces a warning: the app's About box shows the
 
 - Best-effort desktop jobs and the cli-smoke matrix use job-level
   `continue-on-error`; their failure never blocks publishing.
+- The publish job requires the `checks` job to succeed: a commit that fails
+  typecheck, lint or tests is never published.
 - The publish job runs whenever the run is not cancelled and checks the required
   files itself: `ZCode-Beyond-mac-arm64.dmg`, `ZCode-Beyond-mac-arm64.zip`,
   `zcode-beyond-cli-mac-arm64.tar.gz`. If one is missing, nothing is published and
@@ -143,12 +151,13 @@ come from the same release and therefore do not protect against a compromised ac
 
 ## 8. Acceptance scenarios
 
-1. Push to `main` with a code change → CI green; Release publishes/updates the
+1. Push to `main` with a code change → exactly one run (Release), whose `checks` job
+   is green; Release publishes/updates the
    `latest` prerelease; `…/releases/download/latest/ZCode-Beyond-mac-arm64.dmg` downloads
    the new build; `/releases/latest` still points at the newest `v*` release (or 404s).
 2. Windows job fails → the release still publishes; the Windows asset is removed from
    `latest`; the run shows the failed job.
-3. macOS arm64 job fails → no publish step changes the release.
+3. macOS arm64 job fails, or the `checks` job fails → no publish step changes the release.
 4. Push of `v1.0.0` → a normal release `v1.0.0` with a downloads table, install notes
    and generated notes; `…/releases/latest/download/<file>` resolves to it.
 5. Push to `main` touching only `site/` → Pages redeploys, no installers are rebuilt.
