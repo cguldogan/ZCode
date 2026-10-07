@@ -325,6 +325,7 @@ export function TuiApp({
 
   useTuiKeyboardControls({
     readOnlyView: subagents.selected ? { back: subagents.back } : undefined,
+    inputEditorRef,
     abortControllerRef,
     approvalQueue,
     busy,

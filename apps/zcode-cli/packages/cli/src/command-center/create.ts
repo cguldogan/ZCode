@@ -83,7 +83,10 @@ export function createCommandCenter(deps: CommandCenterDeps): TuiSubmitPrompt {
         };
       }
 
-      if (!ZCODE_VENDOR_ACCOUNTS_ENABLED && (command.name === "login" || command.name === "logout")) {
+      if (
+        !ZCODE_VENDOR_ACCOUNTS_ENABLED &&
+        (command.name === "login" || command.name === "logout")
+      ) {
         return { mode: deps.getMode?.(), response: LOCAL_ONLY_ACCOUNT_MESSAGE };
       }
 

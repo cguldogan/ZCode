@@ -28,7 +28,9 @@ const failingDeps = new Proxy(
 
 test("zcode login refuses in the local-only build", async () => {
   const { ctx, output } = captureContext();
-  const code = await runLoginCommand(ctx as never, {} as never, failingDeps as never, false, ["zai"]);
+  const code = await runLoginCommand(ctx as never, {} as never, failingDeps as never, false, [
+    "zai",
+  ]);
   assert.equal(code, 1);
   assert.equal(output().stderr, `${LOCAL_ONLY_ACCOUNT_MESSAGE}\n`);
   assert.equal(output().stdout, "");

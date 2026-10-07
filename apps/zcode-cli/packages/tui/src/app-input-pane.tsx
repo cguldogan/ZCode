@@ -42,6 +42,8 @@ export type PromptInputEditor = Pick<
   TextareaRenderable,
   | "cursorOffset"
   | "deleteRange"
+  | "deleteWordBackward"
+  | "deleteWordForward"
   | "focus"
   | "focused"
   | "gotoBufferEnd"
