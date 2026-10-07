@@ -278,6 +278,7 @@
           <a href="#download">Download</a>
           <a href="#install">Install notes</a>
           <a href="#litellm">LiteLLM setup</a>
+          <a href="#updates">Updates</a>
           <a href="https://github.com/__REPO__">Source on GitHub</a>
         </div>
       </header>
@@ -302,6 +303,11 @@
           <li>
             <strong>No telemetry, no remote control:</strong> analytics reporting is off at build
             time; no auto-update, forced update or remote provider configuration.
+          </li>
+          <li>
+            <strong>Update check on request:</strong> <em>Check for Updates…</em> and
+            <code>zcode update</code> ask GitHub whether a newer build exists. Report only — nothing
+            is downloaded or installed.
           </li>
           <li>
             <strong>TUI extras:</strong> <code>/review</code> panel for uncommitted changes,
@@ -581,6 +587,26 @@ sha256sum -c ZCode-Beyond-linux-x64.AppImage.sha256  # Linux</code></pre>
         <p>
           “Load models” works for any provider using the OpenAI chat-completions or responses API,
           so other local OpenAI-compatible servers can be added the same way.
+        </p>
+      </section>
+
+      <section id="updates">
+        <h2>Staying up to date</h2>
+
+        <p>
+          Nothing updates by itself. To find out whether a newer build exists, use
+
+          <strong>Check for Updates…</strong> in the desktop app (app menu on macOS, Help menu on
+          Windows and Linux) or run:
+        </p>
+
+        <pre><code>zcode update</code></pre>
+
+        <p>
+          It compares the commit your build was made from with the newest build on this page and
+          lists what changed. Exit code <code>0</code> means up to date, <code>10</code> an update
+          is available. The check only contacts <code>api.github.com</code>, sends no identifiers
+          and never downloads anything — download and install the new build as above.
         </p>
       </section>
 

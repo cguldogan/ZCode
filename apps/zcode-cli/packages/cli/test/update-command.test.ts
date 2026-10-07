@@ -23,8 +23,8 @@ const available: GitHubBuildUpdateResult = {
   latestCommit: latest,
   commitsBehind: 3,
   changes: [{ sha: latest, subject: "feat: newest" }],
-  downloadUrl: "https://github.com/cguldogan/ZCode/releases/tag/latest",
-  compareUrl: "https://github.com/cguldogan/ZCode/compare/fedcba98...0123456",
+  downloadUrl: "https://github.com/cguldogan/zcode-beyond/releases/tag/latest",
+  compareUrl: "https://github.com/cguldogan/zcode-beyond/compare/fedcba98...0123456",
 };
 
 test("reports an available update with exit code 10 and passes the build commit", async () => {
@@ -38,7 +38,7 @@ test("reports an available update with exit code 10 and passes the build commit"
     },
   });
   assert.equal(code, UPDATE_AVAILABLE_EXIT_CODE);
-  assert.deepEqual(seen, [{ repository: "cguldogan/ZCode", currentCommit: "fedcba98" }]);
+  assert.deepEqual(seen, [{ repository: "cguldogan/zcode-beyond", currentCommit: "fedcba98" }]);
   assert.equal(
     output().stdout,
     [

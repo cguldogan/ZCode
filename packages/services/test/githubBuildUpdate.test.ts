@@ -215,5 +215,5 @@ test("local commit ids are normalized; placeholders are not commits", () => {
   assert.equal(normalizeBuildCommit("unknown"), undefined);
   assert.equal(normalizeBuildCommit("abc"), undefined);
   assert.equal(normalizeBuildCommit(undefined), undefined);
-  assert.equal(PRODUCT_GITHUB_REPOSITORY, "cguldogan/ZCode");
+  assert.equal(PRODUCT_GITHUB_REPOSITORY, "cguldogan/zcode-beyond");
 });
