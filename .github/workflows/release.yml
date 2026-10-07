@@ -100,7 +100,13 @@ jobs:
           NODE_ENV: production
           TARGET_OS: ${{ matrix.os }}
           TARGET_ARCH: ${{ matrix.arch }}
-        run: pnpm bundle:desktop -- --os "$TARGET_OS" --arch "$TARGET_ARCH"
+        run: |
+          source .github/scripts/lib.sh
+          log="$RUNNER_TEMP/bundle-desktop.log"
+          if ! pnpm bundle:desktop -- --os "$TARGET_OS" --arch "$TARGET_ARCH" 2>&1 | tee "$log"; then
+            annotate_log_tail "$log" "desktop bundle failed for $TARGET_OS $TARGET_ARCH"
+            exit 1
+          fi
 
       - name: Collect artifacts
         env:
@@ -147,12 +153,14 @@ jobs:
         # darwin-arm64 is required (and smoke-tested by build-sea.mjs on this host);
         # every other target is best-effort.
         run: |
+          source .github/scripts/lib.sh
           dist=apps/zcode-cli/packages/cli/dist
           for target in darwin-arm64 darwin-x64 linux-x64 linux-arm64 win-x64 win-arm64; do
-            if node apps/zcode-cli/packages/cli/scripts/build-sea.mjs --target "$target"; then
+            log="$RUNNER_TEMP/sea-$target.log"
+            if node apps/zcode-cli/packages/cli/scripts/build-sea.mjs --target "$target" 2>&1 | tee "$log"; [ "${PIPESTATUS[0]}" -eq 0 ]; then
               echo "built $target"
             elif [ "$target" = darwin-arm64 ]; then
-              echo "::error::single executable for $target failed"
+              annotate_log_tail "$log" "single executable for $target failed"
               exit 1
             else
               echo "::warning::single executable for $target failed; it will be missing from this release"
