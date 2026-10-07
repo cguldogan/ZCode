@@ -20,6 +20,7 @@ export const zhCN: ZCodeCopy = {
   doctor     检查运行时和打包假设
   plugins    管理插件与市场（\`plugins list|install|uninstall|enable|disable|update|validate|marketplace ...\`；别名 plugin）
   skills     列出本地 skills（\`skills list\`）
+  update     检查 GitHub 上是否有更新的 ZCode Beyond 构建（仅提示，不下载）
   tui        打开终端 UI
   version    打印 CLI 版本
 

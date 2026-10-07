@@ -1,3 +1,4 @@
+import type { GitHubBuildUpdateResult } from "./githubBuildUpdate.js";
 import type { ElectronReleaseChannel, Locale } from "./protocol.js";
 
 export interface PostUpdateReleaseNotesPayload {
@@ -24,7 +25,9 @@ export type UpdateCheckResultPayload =
   | { kind: "already-downloading"; version: string; progress: string }
   | { kind: "ready"; version: string }
   | { kind: "dev-skipped" }
-  | { kind: "error"; message: string };
+  | { kind: "error"; message: string }
+  /** Self-hosted build: result of the manual GitHub check (github-update-check.md §5). */
+  | { kind: "github-build"; result: GitHubBuildUpdateResult };
 
 /**
  * 桌面自动更新器的持续状态，用于同步原生菜单和 Windows 自绘标题栏菜单。

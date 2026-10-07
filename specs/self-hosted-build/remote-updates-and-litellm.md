@@ -24,7 +24,8 @@ providers. Those are user-initiated and keep working.
   - **App auto-update** (`packages/desktop/src/main/autoUpdater.ts`) is
     initialised with `enabled: false`. Every entry point that could reach
     `electron-updater` (poll, manual menu check, release-channel refresh, force
-    update) fails closed without a network request.
+    update) fails closed without a network request. The desktop menu item instead
+    runs the manual, report-only GitHub check (`github-update-check.md`).
   - **Force-update gate** (`forceUpdateGuard.ts`) is not consulted, so startup
     never waits on, or is blocked by, a vendor `minimalVersion`.
   - **Built-in provider config** is read only from the bundled file

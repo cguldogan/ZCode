@@ -1451,6 +1451,16 @@ const zhCN: Record<string, string> = {
   "update.toast.ready": "v{version} 已下载，重启即可安装",
   "update.toast.devSkipped": "开发环境不检查更新",
   "update.toast.error": "检查更新失败：{error}",
+  "update.github.upToDate": "已是最新构建（{commit}）",
+  "update.github.availableOne": "有新构建（{commit}）可用：1 个新提交",
+  "update.github.availableMany": "有新构建（{commit}）可用：{count} 个新提交",
+  "update.github.availableOneWithChange": "有新构建（{commit}）可用：1 个新提交。最新：{change}",
+  "update.github.availableManyWithChange":
+    "有新构建（{commit}）可用：{count} 个新提交。最新：{change}",
+  "update.github.newerThanLatest": "当前构建（{current}）比最新发布的构建（{latest}）更新",
+  "update.github.unknownBuild": "当前构建（{current}）不是已发布的构建。最新发布的构建是 {latest}",
+  "update.github.noRelease": "GitHub 上尚未发布任何构建",
+  "update.github.openDownload": "打开下载页面",
   "forceUpdate.title": "需要升级 ZCode 后继续使用",
   "forceUpdate.description":
     "当前版本 v{currentVersion} 低于最低可用版本 v{minimalVersion}。请先完成升级，升级前暂时无法继续使用当前客户端。",

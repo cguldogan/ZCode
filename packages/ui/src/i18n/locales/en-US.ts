@@ -1566,6 +1566,19 @@ const enUS: Record<string, string> = {
   "update.toast.ready": "v{version} downloaded, restart to install",
   "update.toast.devSkipped": "Updates are disabled in dev builds",
   "update.toast.error": "Update check failed: {error}",
+  "update.github.upToDate": "You're on the latest build ({commit})",
+  "update.github.availableOne": "A newer build ({commit}) is available: 1 new commit",
+  "update.github.availableMany": "A newer build ({commit}) is available: {count} new commits",
+  "update.github.availableOneWithChange":
+    "A newer build ({commit}) is available: 1 new commit. Latest: {change}",
+  "update.github.availableManyWithChange":
+    "A newer build ({commit}) is available: {count} new commits. Latest: {change}",
+  "update.github.newerThanLatest":
+    "This build ({current}) is newer than the latest published build ({latest})",
+  "update.github.unknownBuild":
+    "This build ({current}) is not a published build. The latest published build is {latest}",
+  "update.github.noRelease": "No build has been published on GitHub yet",
+  "update.github.openDownload": "Open download page",
   "forceUpdate.title": "Update ZCode to continue",
   "forceUpdate.description":
     "Your current version v{currentVersion} is below the minimum supported version v{minimalVersion}. Update first before continuing with this client.",

@@ -12,6 +12,7 @@ import { isShortcutRecordingActive } from "@/shortcuts/bindings.js";
 import { isRendererReloadNavigation } from "@/lib/rendererNavigation.js";
 import { useOptionalBaseWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
 import { shouldPublishCompleteWorkspaceSnapshot } from "@/root/rootPlatformWorkspaceSync.js";
+import { githubBuildUpdateToast } from "@/root/githubBuildUpdateToast.js";
 import {
   createShareImportIntent,
   isShareImportIntentSame,
@@ -268,6 +269,22 @@ export function useRootPlatformEffects({
             case "error":
               toast(intl.formatMessage({ id: "update.toast.error" }, { error: payload.message }));
               return;
+            case "github-build": {
+              const model = githubBuildUpdateToast(payload.result);
+              const downloadUrl = model.downloadUrl;
+              toast(
+                intl.formatMessage({ id: model.message.id }, model.message.values),
+                downloadUrl
+                  ? {
+                      variant: "update",
+                      durationMs: 15_000,
+                      actionLabel: intl.formatMessage({ id: "update.github.openDownload" }),
+                      onAction: () => platform.openExternal(downloadUrl),
+                    }
+                  : undefined,
+              );
+              return;
+            }
           }
         })
       : () => {};

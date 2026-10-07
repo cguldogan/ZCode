@@ -1,5 +1,9 @@
+import { execFileSync } from "node:child_process";
 import { chmod, readFile, rm } from "node:fs/promises";
-import { readThirdPartyNotices, stageThirdPartyNotices } from "../../../../../scripts/third-party-notices.mjs";
+import {
+  readThirdPartyNotices,
+  stageThirdPartyNotices,
+} from "../../../../../scripts/third-party-notices.mjs";
 import { basename, dirname, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { build } from "esbuild";
@@ -9,6 +13,19 @@ const cliRoot = resolve(import.meta.dirname, "..");
 const projectRoot = resolve(cliRoot, "../..");
 const executableFileMode = 0o755;
 const packageJsonFile = "package.json";
+/** Same short commit id as the desktop build (packages/desktop/scripts/build-metadata.mjs). */
+const resolveBuildCommit = (directory) => {
+  try {
+    return execFileSync("git", ["rev-parse", "--short=8", "HEAD"], {
+      cwd: directory,
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .toString()
+      .trim();
+  } catch {
+    return process.env.ZCODE_COMMIT ?? "unknown";
+  }
+};
 const rootPackageVersionError = "Root package.json must define a non-empty string version.";
 const desktopAgentBuildFlag = "--desktop-agent";
 export const resolveBuildExternal = () => ["@zcode/tui", "playwright-core", "koffi"];
@@ -231,6 +248,9 @@ export const buildCli = async ({
     bundle: true,
     define: {
       __CLI_VERSION__: JSON.stringify(cliVersion),
+      // Read by @zcode/shared ZCODE_COMMIT; `zcode update` compares it with GitHub
+      // (specs/self-hosted-build/github-update-check.md §2).
+      __ZCODE_COMMIT__: JSON.stringify(resolveBuildCommit(rootDirectory)),
     },
     entryPoints: [resolve(cliDirectory, "src/main.ts")],
     // Ink 7 and yoga-layout use top-level await, so the CJS CLI bundle loads the TUI

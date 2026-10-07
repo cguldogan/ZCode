@@ -10,6 +10,11 @@ export {
   resolveSocketConnectHost,
   type ChinaEgressGuardOptions,
 } from "./node/chinaEgressGuard.js";
+export {
+  checkGitHubBuildUpdate,
+  GITHUB_BUILD_UPDATE_TIMEOUT_MS,
+  type CheckGitHubBuildUpdateOptions,
+} from "./node/githubBuildUpdate.js";
 export { scanOfficialPluginCacheRoots } from "./node/officialPluginCache.js";
 export {
   migrateUserSubagentMarkdown,

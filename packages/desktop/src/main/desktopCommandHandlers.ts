@@ -13,6 +13,7 @@ import {
   resolveRuntimeZCodeEndpointOrigin,
   ZCODE_ENV,
   ZCODE_PRODUCT_FLAVOR,
+  ZCODE_REMOTE_UPDATES_ENABLED,
   buildZCodeEndpointUrls,
   getCommunityUrlFromConfigs,
   getFeedbackUrlFromConfig,
@@ -24,6 +25,7 @@ import { readZCodeStdioTapDevState, setZCodeStdioTapDevEnabled } from "@zcode/se
 import { showAboutDialog } from "./about.js";
 import { checkForUpdateMenuClick } from "./autoUpdater.js";
 import { exportLogs } from "./exportLogs.js";
+import { runGitHubBuildUpdateCheck } from "./githubBuildUpdateCheck.js";
 import { openResourceManager } from "./resourceManagerWindow.js";
 import { resolveCuaOsSupport } from "./cuaOsSupport.js";
 import { syncWindowControlsOverlayForZoomLevel } from "./desktopWindowButtonPosition.js";
@@ -589,6 +591,12 @@ export async function executeDesktopCommand(options: {
       );
       return;
     case DesktopCommandIds.CheckForUpdates:
+      // Self-hosted build: the vendor updater stays off; the menu asks GitHub instead
+      // (report only, specs/self-hosted-build/github-update-check.md).
+      if (!ZCODE_REMOTE_UPDATES_ENABLED) {
+        await runGitHubBuildUpdateCheck({ targetWindow, logger: options.logger });
+        return;
+      }
       // 按产品身份而不是后端环境放行：生产后端的 Preview 同样没有更新器。
       if (ZCODE_PRODUCT_FLAVOR === "production") {
         checkForUpdateMenuClick(targetWindow);

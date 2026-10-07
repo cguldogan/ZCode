@@ -75,7 +75,12 @@ export {
   normalizeZCodeProductFlavor,
 } from "./env.js";
 export * from "./errors.js";
-export { PRODUCT_DISPLAY_NAME, PRODUCT_HOMEPAGE_URL } from "./branding.js";
+export {
+  PRODUCT_DISPLAY_NAME,
+  PRODUCT_GITHUB_REPOSITORY,
+  PRODUCT_HOMEPAGE_URL,
+} from "./branding.js";
+export * from "./githubBuildUpdate.js";
 export {
   CHINA_EGRESS_BLOCKED_HOST_SUFFIXES,
   isChinaEgressBlockedHost,

@@ -20,6 +20,9 @@ and is not affiliated with or endorsed by the ZCode authors. See [NOTICE.md](NOT
   host) before DNS.
 - **No telemetry, no remote control:** Alibaba ARMS and analytics reporting are off at
   build time; no auto-update, forced update or remote provider configuration.
+- **Manual update check from GitHub:** *Check for Updates…* (desktop) and `zcode update`
+  (CLI) ask this repository's `latest` release whether a newer build exists and link to
+  the download. Only on request, report only: nothing is downloaded or installed.
 - **TUI extras:** `/review` panel for uncommitted changes, `/undo` / `/redo` of the last
   agent turn's file edits, `tui.diffStyle` (`auto` | `stacked`), status line with tokens/s,
   `/exit`, real context window, and hold-to-delete-faster (Backspace held 3 s deletes by word).

@@ -62,6 +62,14 @@ publish_rolling() {
     echo "Stable links: \`${server}/${GH_REPO}/releases/download/${tag}/<file>\`."
     echo
     write_install_notes
+    echo
+    # Machine-readable build marker for the in-app update check; hidden when rendered.
+    # Format owned by packages/shared/src/githubBuildUpdate.ts (formatGitHubBuildMarker).
+    if [ -n "${APP_VERSION:-}" ]; then
+      printf '<!-- zcode-beyond-build {"commit":"%s","version":"%s"} -->\n' "$GITHUB_SHA" "$APP_VERSION"
+    else
+      printf '<!-- zcode-beyond-build {"commit":"%s"} -->\n' "$GITHUB_SHA"
+    fi
   } >"$notes"
 
   # 1. Point the tag at this commit first, so a newly created release can never
@@ -78,7 +86,6 @@ publish_rolling() {
   #    recreate) keeps every download link working except for the few seconds
   #    an individual asset is being replaced.
   if gh release view "$tag" >/dev/null 2>&1; then
-    gh release edit "$tag" --prerelease --title "$title" --notes-file "$notes"
     local wanted=" " asset name
     for asset in "${assets[@]}"; do wanted+="$(basename "$asset") "; done
     # Drop assets a previous build published but this one did not produce
@@ -91,7 +98,12 @@ publish_rolling() {
       esac
     done < <(gh release view "$tag" --json assets --jq '.assets[].name')
     gh release upload "$tag" "${assets[@]}" --clobber
+    # 3. Notes (and the build marker the update check reads) go last, so the marker only
+    #    names a commit once all of its files are uploaded (github-update-check.md §3).
+    gh release edit "$tag" --prerelease --title "$title" --notes-file "$notes"
   else
+    # gh uploads assets to a draft and publishes it afterwards, so the marker never
+    # becomes visible before the files.
     gh release create "$tag" "${assets[@]}" --prerelease --title "$title" --notes-file "$notes"
   fi
   rm -f "$notes"

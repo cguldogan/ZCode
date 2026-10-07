@@ -20,6 +20,7 @@ Commands:
   doctor     Inspect runtime and packaging assumptions
   plugins    Manage plugins and marketplaces (\`plugins list|install|uninstall|enable|disable|update|validate|marketplace ...\`; alias: plugin)
   skills     List local skills (\`skills list\`)
+  update     Check GitHub for a newer ZCode Beyond build (report only, never downloads)
   tui        Open the terminal UI
   version    Print the CLI version
 
