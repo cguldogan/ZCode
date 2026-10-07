@@ -20,8 +20,9 @@ and is not affiliated with or endorsed by the ZCode authors. See [NOTICE.md](NOT
   host) before DNS.
 - **No telemetry, no remote control:** Alibaba ARMS and analytics reporting are off at
   build time; no auto-update, forced update or remote provider configuration.
-- **TUI extras:** status line with tokens/s, `/exit`, real context window, and
-  hold-to-delete-faster (Backspace held 3 s deletes by word).
+- **TUI extras:** `/review` panel for uncommitted changes, `/undo` / `/redo` of the last
+  agent turn's file edits, `tui.diffStyle` (`auto` | `stacked`), status line with tokens/s,
+  `/exit`, real context window, and hold-to-delete-faster (Backspace held 3 s deletes by word).
 
 Design notes live in [`specs/`](specs/). Upstream releases are reviewed before being
 merged (`git remote upstream` → `zai-org/ZCode`, push disabled).

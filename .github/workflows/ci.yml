@@ -68,6 +68,14 @@ jobs:
         working-directory: apps/zcode-cli/packages/cli
         run: node --import tsx --test test/*.test.ts
 
+      - name: Test CLI core runtime
+        working-directory: apps/zcode-cli/packages/core
+        run: node --import tsx --test test/*.test.ts
+
+      - name: Test CLI adapters
+        working-directory: apps/zcode-cli/packages/adapters
+        run: node --import tsx --test test/*.test.ts
+
       - name: Test TUI
         working-directory: apps/zcode-cli/packages/tui
         run: '"$GITHUB_WORKSPACE/node_modules/.bin/tsx" --test test/*.test.ts'
