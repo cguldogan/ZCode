@@ -14,6 +14,7 @@ import type {
   ToolResultDisplayPayload,
   UiThemeMode,
   UiThemePreference,
+  TuiDiffStyle,
   TurnId,
   TurnSteerResult,
 } from "@zcode/contracts";
@@ -23,7 +24,10 @@ export type TuiContextUsage = Pick<SessionProjection, "contextUsed" | "contextWi
 export type TuiSessionMetadata = Pick<
   TuiSubmitPromptResult,
   "locale" | "model" | "theme" | "thoughtLevel" | "modelOptions" | "effortOptions" | "loginRequired"
->;
+> & {
+  /** Validated `tui.diffStyle` config (specs/tui/diff-review-undo.md §3). */
+  diffStyle?: TuiDiffStyle;
+};
 
 export type TuiSwitchableMode = Extract<CollaborationMode, "plan" | "build" | "edit" | "yolo">;
 
@@ -295,6 +299,64 @@ export type TuiModeOption = {
   label: string;
 };
 
+/** `/review` data contract (specs/tui/diff-review-undo.md §1); implemented by the CLI. */
+export type TuiReviewFileStatus =
+  | "added"
+  | "copied"
+  | "deleted"
+  | "modified"
+  | "renamed"
+  | "type_changed"
+  | "unmerged"
+  | "untracked";
+
+export type TuiReviewFile = {
+  additions: number;
+  binary: boolean;
+  deletions: number;
+  /** Repository-relative path, `/`-separated as git prints it. */
+  path: string;
+  previousPath?: string;
+  status: TuiReviewFileStatus;
+};
+
+export type TuiReviewSnapshot = {
+  files: TuiReviewFile[];
+  /** Absolute repository root. */
+  root: string;
+  totalAdditions: number;
+  totalDeletions: number;
+  /** The file list was cut at the provider's limit. */
+  truncated: boolean;
+};
+
+export type TuiReviewFailure =
+  | { kind: "git_failed"; exitCode?: number; timedOut?: boolean }
+  | { kind: "git_unavailable" }
+  | { directory: string; kind: "not_git_repo" };
+
+export type TuiReviewListResult = { kind: "ok"; snapshot: TuiReviewSnapshot } | TuiReviewFailure;
+
+export type TuiReviewDiffHunk = {
+  lines: string[];
+  newLines: number;
+  newStart: number;
+  oldLines: number;
+  oldStart: number;
+};
+
+export type TuiReviewFileDiffResult =
+  | { binary: boolean; hunks: TuiReviewDiffHunk[]; kind: "ok"; truncated: boolean }
+  | TuiReviewFailure;
+
+export type TuiWorkspaceReview = {
+  listChanges(options?: { abortSignal?: AbortSignal }): Promise<TuiReviewListResult>;
+  loadFileDiff(
+    file: TuiReviewFile,
+    options?: { abortSignal?: AbortSignal },
+  ): Promise<TuiReviewFileDiffResult>;
+};
+
 export type TuiOptions = {
   /** Called after the startup screen has painted; runtime ownership stays in CLI. */
   loadStartupOptions?: () => Promise<TuiStartupOptions>;
@@ -335,6 +397,10 @@ export type TuiOptions = {
   subscribeThemeMode?: (listener: (mode: UiThemeMode) => void) => () => void;
   setTerminalBackgroundColor?: (color: string) => void;
   writeClipboardText?: TuiWriteClipboardText;
+  /** `tui.diffStyle`; absent means "auto". */
+  diffStyle?: TuiDiffStyle;
+  /** Git-backed provider for the `/review` view; absent disables `/review` in this TUI. */
+  workspaceReview?: TuiWorkspaceReview;
 };
 
 export type TuiStartupOptions = Pick<
@@ -349,4 +415,5 @@ export type TuiStartupOptions = Pick<
   | "effortOptions"
   | "slashCommands"
   | "workspaceGitBranch"
+  | "diffStyle"
 >;

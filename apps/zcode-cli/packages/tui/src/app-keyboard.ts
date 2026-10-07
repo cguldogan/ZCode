@@ -31,6 +31,8 @@ import type { PromptInputEditor } from "./app-input-pane.js";
 import { handleSuggestionNavigationKey } from "./app-keyboard-suggestions.js";
 import { createSidebarShortcutState, type SidebarShortcutState } from "./app-sidebar-shortcut.js";
 import { handleSidebarShortcutKey } from "./app-sidebar-keyboard.js";
+import { handleReadOnlyViewKey } from "./app-keyboard-readonly.js";
+import type { ReviewPanelController } from "./app-review-panel.js";
 import type {
   ApprovalPrompt,
   DraftAttachment,
@@ -62,6 +64,7 @@ export {
 
 type UseTuiKeyboardControlsOptions = {
   readOnlyView?: { back(): void };
+  review?: Pick<ReviewPanelController, "handleKey" | "state">;
   abortControllerRef: MutableRefObject<AbortController | undefined>;
   approvalQueue: ApprovalPrompt[];
   busy: boolean;
@@ -103,6 +106,7 @@ type UseTuiKeyboardControlsOptions = {
 
 export function useTuiKeyboardControls({
   readOnlyView,
+  review,
   abortControllerRef,
   approvalQueue,
   busy,
@@ -151,31 +155,25 @@ export function useTuiKeyboardControls({
         const deleteStep = deleteHoldRef.current.observe(key, Date.now());
         if (key.eventType === "release") return;
 
+        // The /review view owns the keyboard while open (specs/tui/diff-review-undo.md §1).
+        if (review?.state) {
+          resetCtrlCExitGuard(ctrlCExitGuardRef.current);
+          if (review.handleKey(key)) consumeKey(key);
+          return;
+        }
+
         if (readOnlyView) {
           resetCtrlCExitGuard(ctrlCExitGuardRef.current);
-          if (
-            handleSidebarShortcutKey({
-              consumeKey,
-              key,
-              nowMs: Date.now(),
-              setStatus,
-              shortcutState: sidebarShortcutRef.current,
-              toggleSidebar,
-              toggleSidebarSection,
-            })
-          )
-            return;
-          if (key.name === "escape") {
-            consumeKey(key);
-            readOnlyView.back();
-          } else if ((key.name === "c" || key.name === "y") && key.ctrl) {
-            consumeKey(key);
-            copyCurrentSelection();
-          } else if (
-            !["up", "down", "left", "right", "pageup", "pagedown", "home", "end"].includes(key.name)
-          ) {
-            consumeKey(key);
-          }
+          handleReadOnlyViewKey({
+            consumeKey,
+            copyCurrentSelection,
+            key,
+            readOnlyView,
+            setStatus,
+            shortcutState: sidebarShortcutRef.current,
+            toggleSidebar,
+            toggleSidebarSection,
+          });
           return;
         }
 
@@ -399,6 +397,7 @@ export function useTuiKeyboardControls({
       },
       [
         readOnlyView,
+        review,
         abortControllerRef,
         approvalQueue,
         workflowExpansion,

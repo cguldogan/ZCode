@@ -3,7 +3,7 @@ import { getZCodeCopy } from "@zcode/i18n";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { AppView } from "./app-view.js";
 import type { PromptInputEditor } from "./app-input-pane.js";
-import { selectionCopyStatus, type SelectionCopyResult } from "./app-copy.js";
+import { useCopyCurrentSelection, type SelectionCopyResult } from "./app-copy-selection.js";
 import { useClipboardImagePaste } from "./app-clipboard-image.js";
 import { useFileMentionController } from "./app-file-mentions.js";
 import { useTuiKeyboardControls } from "./app-keyboard.js";
@@ -36,6 +36,7 @@ import { useSessionEventApplier } from "./app-session-event-handler.js";
 import { useTuiWorkflowRuns } from "./app-workflow-controller.js";
 import { useTuiApplyResult } from "./app-result.js";
 import { useSubagents } from "./app-subagents.js";
+import { useReviewPanel } from "./app-review-panel.js";
 import { useModelThroughput } from "./app-throughput.js";
 import type { TuiOptions } from "./types.js";
 
@@ -102,6 +103,7 @@ export function TuiApp({
   const workflowRuns = useTuiWorkflowRuns({ copy: copy.tui, options, setMessages });
   const sidebar = useSidebarController();
   const subagents = useSubagents(options);
+  const review = useReviewPanel({ copy: copy.tui, provider: options.workspaceReview, setStatus });
 
   const abortControllerRef = useRef<AbortController | undefined>(undefined);
   const draftRef = useRef("");
@@ -246,6 +248,7 @@ export function TuiApp({
     emptyPromptStatus: copy.tui.input.typePrompt,
     messageInsertIndex: messages.length,
     onExit,
+    openReview: review.open,
     options,
     requestPermission,
     resolveSubmittedText,
@@ -307,15 +310,13 @@ export function TuiApp({
     setStatus,
   });
 
-  const copyCurrentSelection = useCallback((): boolean => {
-    if (!hasCopyableSelection()) return false;
-    void copySelection().then((result) => {
-      const copyStatus = selectionCopyStatus(result, copy.tui.copy);
-      if (copyStatus.status) setStatus(copyStatus.status);
-      if (copyStatus.details) setStatusDetails(copyStatus.details);
-    });
-    return true;
-  }, [copy, copySelection, hasCopyableSelection]);
+  const copyCurrentSelection = useCopyCurrentSelection({
+    copy: copy.tui.copy,
+    copySelection,
+    hasCopyableSelection,
+    setStatus,
+    setStatusDetails,
+  });
   const switchMode = useTuiModeSwitcher({
     mode,
     setMode,
@@ -325,6 +326,7 @@ export function TuiApp({
 
   useTuiKeyboardControls({
     readOnlyView: subagents.selected ? { back: subagents.back } : undefined,
+    review,
     inputEditorRef,
     abortControllerRef,
     approvalQueue,
@@ -364,6 +366,7 @@ export function TuiApp({
   });
 
   return React.createElement(AppView, {
+    review,
     subagents,
     toggleSidebar: sidebar.toggleSidebar,
     activeTurnId,

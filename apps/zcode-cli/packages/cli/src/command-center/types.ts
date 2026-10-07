@@ -15,6 +15,7 @@ import type {
   DynamicWorkflowRunSessionSummary,
   PluginLoadOutcome,
   PluginMetadata,
+  TuiDiffStyle,
   WorkflowRunSnapshot,
   WorkflowRunStatus,
 } from "@zcode/contracts";
@@ -192,6 +193,7 @@ export type CommandCenterApp = {
   getCurrentModelOption?(): CommandCenterModelOption | undefined;
   getLocale?(): TuiSubmitPromptResult["locale"];
   getTheme?(): TuiSubmitPromptResult["theme"];
+  getDiffStyle?(): TuiDiffStyle;
   getThoughtLevel?(): string | undefined;
   loadSessionTranscript?(): Promise<NonNullable<TuiSubmitPromptResult["restoredMessages"]>>;
   readSubagents?: import("@zcode/tui").TuiReadSubagents;

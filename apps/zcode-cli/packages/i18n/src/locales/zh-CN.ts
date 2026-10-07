@@ -62,6 +62,9 @@ Slash Commands:
   /new                  在 TUI 中开始新 session
   /resume [sessionId]   按 sessionId 恢复 session；省略时恢复当前 cwd 最新 session
   /rewind [latest|checkpointId]  查看最新 checkpoint 或恢复 workspace 文件
+  /review               审查未提交的改动并查看高亮 diff（TUI 视图；-p 下输出文本摘要）
+  /undo                 撤销上一轮 agent 的文件改动
+  /redo                 重新应用被 /undo 撤销的文件改动
   /skill [name] [task]  列出 skills，或强制下一次 prompt 加载某个 skill
   /goal [action]        查看或设置当前 session goal
 `,
@@ -352,6 +355,29 @@ Slash Commands:
     slash: {
       title: "命令",
       row: ({ name, selected, summary }) => `${selected ? ">" : " "} /${name}  ${summary}`,
+    },
+    review: {
+      title: " 审查 ",
+      loading: "正在读取未提交的改动...",
+      loadingDiff: "正在加载 diff...",
+      summary: ({ additions, deletions, files }) =>
+        `${files} 个文件有改动  +${additions} -${deletions}`,
+      listHelp: "上/下 或 j/k 移动 · Enter 打开 · r 刷新 · Esc 关闭",
+      diffHelp: "上/下/PgUp/PgDn 或 j/k 滚动 · n/p 下一个/上一个文件 · Esc 返回",
+      empty: "没有未提交的改动。",
+      listTruncated: "文件列表已截断。",
+      binary: "二进制文件，无文本 diff。",
+      noTextChanges: "没有文本改动（仅权限或元数据变化）。",
+      diffTruncated: "Diff 已截断，仅显示开头部分。",
+      notGitRepo: (directory) => `不是 git 仓库：${directory}`,
+      gitUnavailable: "PATH 中找不到 git。",
+      gitFailed: ({ exitCode, timedOut }) =>
+        timedOut
+          ? "读取改动时 git 超时。"
+          : `读取改动时 git 失败${exitCode === undefined ? "" : `（退出码 ${exitCode}）`}。`,
+      pendingApproval: "有待处理的审批请求，按 Esc 返回处理。",
+      unavailable: "当前客户端不支持 /review。",
+      closed: "已关闭审查视图。",
     },
   },
 };

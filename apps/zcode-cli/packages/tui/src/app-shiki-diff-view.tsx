@@ -1,10 +1,10 @@
 import { RGBA, StyledText, type TextChunk } from "@mbears/opentui-core";
 import React from "react";
 import type { ToolResultDisplayHunk, ToolResultDisplayLine } from "./app-model.js";
+import { resolveDiffViewMode, useDiffStyle, type DiffViewMode } from "./app-diff-style.js";
 import { highlightShikiCodeLines, type ShikiHighlightSegment } from "./app-shiki-highlighter.js";
 import { activeTuiTheme, type TuiThemeTokens } from "./theme/index.js";
 
-const SPLIT_DIFF_WIDTH_BREAKPOINT = 120;
 const LINE_NUMBER_WIDTH = 4;
 const GUTTER_TRAILING_SPACE = " ";
 const UNIFIED_EMPTY_MARKER = " ";
@@ -23,7 +23,7 @@ const rgbaCache = new Map<string, RGBA>();
 type DiffMarker = "+" | "-" | " ";
 type DiffTone = ToolResultDisplayLine["tone"];
 
-type ShikiDiffViewMode = "split" | "unified";
+type ShikiDiffViewMode = DiffViewMode;
 
 type DiffDisplayRow = {
   content: string;
@@ -56,7 +56,8 @@ export function ShikiDiffView(props: {
   const rows = React.useMemo(() => buildDiffRows(props.structuredPatch), [props.structuredPatch]);
   const cacheKey = React.useMemo(() => diffRowsCacheKey(rows), [rows]);
   const [highlightState, setHighlightState] = React.useState<HighlightState | undefined>();
-  const view = props.view ?? diffViewForWidth(props.terminalWidth);
+  const diffStyle = useDiffStyle();
+  const view = props.view ?? resolveDiffViewMode(diffStyle, props.terminalWidth);
 
   React.useEffect(() => {
     let disposed = false;
@@ -91,10 +92,6 @@ export function ShikiDiffView(props: {
       : unifiedRowsToNodes(rows, segmentsByRow, theme)),
     ...(props.truncated ? [truncatedNode(theme)] : []),
   );
-}
-
-export function diffViewForWidth(terminalWidth: number): ShikiDiffViewMode {
-  return terminalWidth > SPLIT_DIFF_WIDTH_BREAKPOINT ? "split" : "unified";
 }
 
 function buildDiffRows(hunks: ToolResultDisplayHunk[]): DiffDisplayRow[] {

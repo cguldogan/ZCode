@@ -10,6 +10,7 @@ import { loadTuiRuntime } from "./tui-runtime-loader.js";
 import { resolveTuiStartupLocale } from "./tui-startup-locale.js";
 import { createWorkspacePathSuggestionProvider } from "./tui-workspace-paths.js";
 import { resolveWorkspaceGitBranch } from "./tui-workspace-git.js";
+import { createWorkspaceReviewProvider } from "./workspace-review/workspace-review.js";
 import { createCliModeState, currentCliMode } from "./tui-command-state.js";
 import type { CliPermissionMode, CliResumeRequest, RunDependencies } from "./cli-types.js";
 
@@ -72,6 +73,7 @@ export const runTuiCommand = async (
             loginRequired: metadata.loginRequired,
             locale: metadata.locale ?? startupLocale,
             theme: metadata.theme ?? "auto",
+            diffStyle: metadata.diffStyle,
             modelOptions: metadata.modelOptions,
             effortOptions: metadata.effortOptions,
             slashCommands: listSlashCommandSuggestions(customCommands),
@@ -89,6 +91,7 @@ export const runTuiCommand = async (
           workspaceDirectory,
         }),
         listMcpServers: promptHandler.listMcpServers,
+        workspaceReview: createWorkspaceReviewProvider({ workspaceDirectory }),
         readSubagents: promptHandler.readSubagents,
         readSubagentTranscript: promptHandler.readSubagentTranscript,
         listWorkflowRuns: promptHandler.listWorkflowRuns,

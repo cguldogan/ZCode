@@ -77,6 +77,9 @@ export const ConfigKey = {
   // UI
   UiLocale: "ui.locale",
   UiTheme: "ui.theme",
+
+  // TUI
+  TuiDiffStyle: "tui.diffStyle",
 } as const;
 
 export type ConfigKey = (typeof ConfigKey)[keyof typeof ConfigKey];
@@ -148,7 +151,9 @@ export type ConfigValue<K extends ConfigKey> = K extends "modelStream.idleTimeou
                                                 ? UiLocale
                                                 : K extends "ui.theme"
                                                   ? UiThemePreference
-                                                  : unknown;
+                                                  : K extends "tui.diffStyle"
+                                                    ? TuiDiffStyle
+                                                    : unknown;
 
 // ============================================================
 // Config Scope
@@ -255,6 +260,9 @@ export interface RuntimeConfig {
     locale: UiLocale;
     theme: UiThemePreference;
   };
+  tui: {
+    diffStyle: TuiDiffStyle;
+  };
 }
 
 export interface RuntimeConfigPatch {
@@ -274,12 +282,30 @@ export interface RuntimeConfigPatch {
   modelAnomalyGuard?: Partial<RuntimeConfig["modelAnomalyGuard"]>;
   hooks?: HooksRuntimeConfigPatch;
   ui?: Partial<RuntimeConfig["ui"]>;
+  tui?: Partial<RuntimeConfig["tui"]>;
 }
 
 export type SupportedLocale = "en-US" | "zh-CN";
 export type UiLocale = SupportedLocale | "auto";
 export type UiThemeMode = "dark" | "light";
 export type UiThemePreference = UiThemeMode | "auto";
+
+/**
+ * TUI diff layout (specs/tui/diff-review-undo.md §3): "auto" splits side-by-side on wide
+ * terminals and stacks on narrow ones; "stacked" always renders a unified diff.
+ */
+export const TUI_DIFF_STYLES = ["auto", "stacked"] as const;
+export type TuiDiffStyle = (typeof TUI_DIFF_STYLES)[number];
+export const DEFAULT_TUI_DIFF_STYLE: TuiDiffStyle = "auto";
+
+/** Single validator for `tui.diffStyle`; unknown values fall back to the default. */
+export function isTuiDiffStyle(value: unknown): value is TuiDiffStyle {
+  return typeof value === "string" && (TUI_DIFF_STYLES as readonly string[]).includes(value);
+}
+
+export function normalizeTuiDiffStyle(value: unknown): TuiDiffStyle {
+  return isTuiDiffStyle(value) ? value : DEFAULT_TUI_DIFF_STYLE;
+}
 
 export const DEFAULT_MODEL_STREAM_IDLE_TIMEOUT_MS = 600_000;
 
@@ -355,6 +381,9 @@ export const DefaultRuntimeConfig: RuntimeConfig = {
   ui: {
     locale: "en-US",
     theme: "auto",
+  },
+  tui: {
+    diffStyle: DEFAULT_TUI_DIFF_STYLE,
   },
 };
 

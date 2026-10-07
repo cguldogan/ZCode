@@ -74,7 +74,11 @@ function inputSelectionContent(
   return [
     h("text", { key: "primary", style: { fg: palette.accent } }, input.primary),
     input.secondary
-      ? h("text", { key: "secondary", style: { fg: palette.muted, wrapMode: "word" } }, input.secondary)
+      ? h(
+          "text",
+          { key: "secondary", style: { fg: palette.muted, wrapMode: "word" } },
+          input.secondary,
+        )
       : null,
     h(
       "text",
@@ -93,7 +97,11 @@ function pendingSelectionContent(
   return [
     h("text", { key: "primary", style: { fg: palette.accent } }, pending.primary),
     pending.secondary
-      ? h("text", { key: "secondary", style: { fg: palette.muted, wrapMode: "word" } }, pending.secondary)
+      ? h(
+          "text",
+          { key: "secondary", style: { fg: palette.muted, wrapMode: "word" } },
+          pending.secondary,
+        )
       : null,
     pending.help
       ? h("text", { key: "help", style: { fg: palette.muted, wrapMode: "word" } }, pending.help)
@@ -104,7 +112,7 @@ function pendingSelectionContent(
 function selectionContent(
   selection: SelectionState,
   copy: TuiCopy,
-  visibleWindow: ReturnType<typeof visibleSelectionItemWindow>,
+  visibleWindow: ReturnType<typeof visibleSelectionItemWindow<SelectionState["items"][number]>>,
   rowContentWidth: number,
 ): React.ReactNode[] {
   return [
@@ -204,10 +212,7 @@ function selectionHelperText(selection: SelectionState, copy: TuiCopy): string {
   });
 }
 
-function selectionRowDetail(
-  item: SelectionState["items"][number],
-  copy: TuiCopy,
-): string {
+function selectionRowDetail(item: SelectionState["items"][number], copy: TuiCopy): string {
   return [
     item.secondary,
     item.meta ? `(${item.meta})` : undefined,

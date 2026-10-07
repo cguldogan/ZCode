@@ -62,6 +62,9 @@ Slash Commands:
   /new                  Start a fresh session in the TUI
   /resume [sessionId]   Resume a session by sessionId; omit it for latest in cwd
   /rewind [latest|checkpointId]  Show latest checkpoint or restore workspace files
+  /review               Review uncommitted changes with highlighted diffs (TUI view; text summary with -p)
+  /undo                 Undo the file changes of the last agent turn
+  /redo                 Re-apply the file changes reverted by /undo
   /skill [name] [task]  List skills, or force the next prompt to load one
   /goal [action]        Show or set the current session goal
 `,
@@ -355,6 +358,29 @@ Slash Commands:
     slash: {
       title: "Commands",
       row: ({ name, selected, summary }) => `${selected ? ">" : " "} /${name}  ${summary}`,
+    },
+    review: {
+      title: " Review ",
+      loading: "Loading uncommitted changes...",
+      loadingDiff: "Loading diff...",
+      summary: ({ additions, deletions, files }) =>
+        `${files} file${files === 1 ? "" : "s"} changed  +${additions} -${deletions}`,
+      listHelp: "Up/Down or j/k move · Enter open · r reload · Esc close",
+      diffHelp: "Up/Down/PgUp/PgDn or j/k scroll · n/p next/previous file · Esc back",
+      empty: "No uncommitted changes.",
+      listTruncated: "File list truncated.",
+      binary: "Binary file; no text diff.",
+      noTextChanges: "No textual changes (mode or metadata only).",
+      diffTruncated: "Diff truncated; only the beginning is shown.",
+      notGitRepo: (directory) => `Not a git repository: ${directory}`,
+      gitUnavailable: "git is not available on PATH.",
+      gitFailed: ({ exitCode, timedOut }) =>
+        timedOut
+          ? "git timed out while reading changes."
+          : `git failed while reading changes${exitCode === undefined ? "" : ` (exit code ${exitCode})`}.`,
+      pendingApproval: "An approval request is waiting. Press Esc to return to it.",
+      unavailable: "/review is not available in this client.",
+      closed: "Review closed.",
     },
   },
 };

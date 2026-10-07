@@ -1,12 +1,8 @@
-import { createHash } from "node:crypto";
-import { isAbsolute, resolve } from "node:path";
-import { applyPatch, type StructuredPatch } from "diff";
 import {
   RewindScope,
   RewindStrategy,
   SessionEventType,
   getCurrentTraceContext,
-  isFileSystemPortError,
   parseWorkspaceCheckpointArtifact,
   traceContextToLogContext,
 } from "../deps.js";
@@ -31,12 +27,18 @@ import type {
   WorkspaceFileRewindUnsafeReason,
 } from "../types.js";
 import type { AgentRuntimeInternal } from "../internal.js";
-
-type PlannedFileState = {
-  content: string | null;
-  exists: boolean;
-  hash: string | null;
-};
+import {
+  compensateFileRewindJournal,
+  hashContent,
+  isIgnoredShellTool,
+  isPathInsideWorkspace,
+  OUTSIDE_WORKSPACE_MESSAGE,
+  readCurrentFileState,
+  resolveCheckpointAfterContent,
+  resolveCheckpointFilePath,
+  type FileRewindJournalEntry,
+  type PlannedFileState,
+} from "./file-rewind-state.js";
 
 type FileCheckpointOperation = {
   action: "restore" | "delete";
@@ -50,11 +52,6 @@ type FileCheckpointOperation = {
 
 type WorkspaceFileRewindPlan = WorkspaceFileRewindPreview & {
   operations: FileCheckpointOperation[];
-};
-
-type FileRewindJournalEntry = {
-  path: string;
-  state: PlannedFileState;
 };
 
 interface FileAggregate {
@@ -100,12 +97,13 @@ export async function applyWorkspaceFileRewind(
     targetMessageIds?: MessageId[];
     targetTurnId?: TurnId;
     traceContext?: TraceContext;
+    /** Refuse (mark unsafe) checkpoint files that resolve outside the workspace root. */
+    workspaceOnly?: boolean;
     /** 组合 rewind 的提交闸：文件全部写成功后、workspace event 发布前提交 branch cut。 */
     commitAfterApply?: () => Promise<void>;
   } = {},
 ): Promise<WorkspaceFileRewindApplyResult> {
-  const traceContext =
-    options.traceContext ?? getCurrentTraceContext() ?? this.rootTraceContext;
+  const traceContext = options.traceContext ?? getCurrentTraceContext() ?? this.rootTraceContext;
   const plan = await buildWorkspaceFileRewindPlan.call(this, {
     ...options,
     traceContext,
@@ -250,30 +248,6 @@ export async function applyWorkspaceFileRewind(
   };
 }
 
-async function compensateFileRewindJournal(
-  this: AgentRuntimeInternal,
-  journal: FileRewindJournalEntry[],
-  traceContext: TraceContext,
-): Promise<void> {
-  for (const entry of [...journal].reverse()) {
-    if (!entry.state.exists || entry.state.content === null) {
-      await this.fileSystemPort!.removeFile({
-        path: entry.path,
-        missingOk: true,
-        trace: traceContext,
-      });
-      continue;
-    }
-    await this.fileSystemPort!.writeTextFile({
-      path: entry.path,
-      content: entry.state.content,
-      createParents: true,
-      atomic: true,
-      trace: traceContext,
-    });
-  }
-}
-
 async function buildWorkspaceFileRewindPlan(
   this: AgentRuntimeInternal,
   options: {
@@ -283,10 +257,10 @@ async function buildWorkspaceFileRewindPlan(
     targetMessageIds?: MessageId[];
     targetTurnId?: TurnId;
     traceContext?: TraceContext;
+    workspaceOnly?: boolean;
   },
 ): Promise<WorkspaceFileRewindPlan> {
-  const traceContext =
-    options.traceContext ?? getCurrentTraceContext() ?? this.rootTraceContext;
+  const traceContext = options.traceContext ?? getCurrentTraceContext() ?? this.rootTraceContext;
   if (!this.artifactStore || !this.fileSystemPort) {
     return {
       canApply: false,
@@ -308,10 +282,15 @@ async function buildWorkspaceFileRewindPlan(
   }
 
   const events = await this.eventStore.getEvents(this.sessionId);
+  // Bug fix: targetTurnId used to be accepted here but not forwarded, so a turn-scoped rewind
+  // whose message ids matched no checkpoint (or that passed only a turn id) silently fell back
+  // to "the latest checkpoint in the session" — reverting one file of possibly another turn.
+  // Forwarding it enables the documented turnId fallback in resolveTargetCheckpoints.
   const checkpoints = resolveTargetCheckpoints(events, {
     targetCheckpointId: options.targetCheckpointId,
     targetMessageId: options.targetMessageId,
     targetMessageIds: options.targetMessageIds,
+    targetTurnId: options.targetTurnId,
   });
   if (checkpoints.length === 0) {
     return {
@@ -375,6 +354,16 @@ async function buildWorkspaceFileRewindPlan(
       // FileSystemPort 只接受绝对路径。若不在计划阶段按 runtime workspace root
       // 解析，安全文件会被误报 file_read_failed，组合 rewind 只返回 blocked。
       const filePath = resolveCheckpointFilePath(this.workspaceRoot, file.path);
+      if (options.workspaceOnly && !isPathInsideWorkspace(this.workspaceRoot, filePath)) {
+        markUnsafe(unsupportedByPath, {
+          action: file.existedBefore && file.beforeContent !== null ? "restore" : "delete",
+          message: OUTSIDE_WORKSPACE_MESSAGE,
+          path: filePath,
+          reason: "unsupported_checkpoint",
+          toolName: artifact.toolName,
+        });
+        continue;
+      }
       const afterContent = resolveCheckpointAfterContent(file);
       if (afterContent === undefined) {
         markUnsafe(unsupportedByPath, {
@@ -473,10 +462,6 @@ async function buildWorkspaceFileRewindPlan(
   };
 }
 
-function resolveCheckpointFilePath(workspaceRoot: string, path: string): string {
-  return isAbsolute(path) ? path : resolve(workspaceRoot, path);
-}
-
 function resolveTargetCheckpoints(
   events: Parameters<typeof selectCheckpointForRewind>[0],
   target: {
@@ -509,93 +494,12 @@ function resolveTargetCheckpoints(
       .map((event) => event.payload)
       .filter((payload): payload is CheckpointCreatedPayload => {
         const checkpoint = payload as Partial<CheckpointCreatedPayload>;
-        return (
-          checkpoint.scope === RewindScope.Workspace ||
-          checkpoint.scope === RewindScope.Both
-        );
+        return checkpoint.scope === RewindScope.Workspace || checkpoint.scope === RewindScope.Both;
       });
   }
 
   const checkpoint = selectCheckpointForRewind(events, target.targetCheckpointId);
   return checkpoint ? [checkpoint] : [];
-}
-
-function resolveCheckpointAfterContent(
-  file: WorkspaceCheckpointArtifact["files"][number],
-): string | null | undefined {
-  const afterContent = (file as { afterContent?: unknown }).afterContent;
-  if (typeof afterContent === "string") {
-    return afterContent;
-  }
-
-  if (!file.existedBefore && file.beforeContent === null && file.structuredPatch.length === 0) {
-    return undefined;
-  }
-
-  const beforeContent = file.beforeContent ?? "";
-  const patch: StructuredPatch = {
-    oldFileName: file.path,
-    newFileName: file.path,
-    oldHeader: undefined,
-    newHeader: undefined,
-    hunks: file.structuredPatch,
-  };
-  const patched = applyPatch(beforeContent, patch, {
-    autoConvertLineEndings: false,
-    fuzzFactor: 0,
-  });
-  return typeof patched === "string" ? patched : undefined;
-}
-
-async function readCurrentFileState(
-  this: AgentRuntimeInternal,
-  path: string,
-  traceContext: TraceContext,
-  abortSignal: AbortSignal | undefined,
-): Promise<PlannedFileState | { message?: string; reason: "file_read_failed" }> {
-  try {
-    const read = await this.fileSystemPort!.readTextFile(
-      {
-        path,
-        trace: traceContext,
-      },
-      { signal: abortSignal },
-    );
-    return {
-      content: read.content,
-      exists: true,
-      hash: hashContent(read.content),
-    };
-  } catch (error) {
-    if (isFileSystemPortError(error) && error.code === "not_found") {
-      return {
-        content: null,
-        exists: false,
-        hash: hashContent(null),
-      };
-    }
-    return {
-      reason: "file_read_failed",
-      message: error instanceof Error ? error.message : String(error),
-    };
-  }
-}
-
-function hashContent(content: string | null): string {
-  if (content === null) {
-    return "missing";
-  }
-  return createHash("sha256").update(content).digest("hex");
-}
-
-function isIgnoredShellTool(toolName: string): boolean {
-  const normalized = toolName.toLowerCase().replace(/[^a-z0-9]/g, "");
-  return (
-    normalized === "bash" ||
-    normalized === "shell" ||
-    normalized.includes("terminal") ||
-    normalized.endsWith("shell")
-  );
 }
 
 function ensureFileAggregate(

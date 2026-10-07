@@ -148,6 +148,9 @@ export function mergeConfigs(...configs: PrioritizedConfig[]): RuntimeConfigPatc
     if (config.ui) {
       result.ui = { ...result.ui, ...config.ui };
     }
+    if (config.tui) {
+      result.tui = { ...result.tui, ...config.tui };
+    }
   }
 
   return result;

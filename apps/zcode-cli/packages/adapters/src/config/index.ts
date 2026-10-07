@@ -11,6 +11,7 @@ import {
   type ConfigPort,
   ConfigScope,
   DefaultRuntimeConfig as DefaultConfig,
+  normalizeTuiDiffStyle,
 } from "@zcode/contracts";
 
 type Handler<K extends ConfigKey> = (value: ConfigValue<K>, prev: ConfigValue<K>) => void;
@@ -212,6 +213,9 @@ class ConfigStore {
     if (config.ui?.theme !== undefined) {
       this.set(ConfigKey.UiTheme, config.ui.theme, scope);
     }
+    if (config.tui?.diffStyle !== undefined) {
+      this.set(ConfigKey.TuiDiffStyle, normalizeTuiDiffStyle(config.tui.diffStyle), scope);
+    }
   }
 
   subscribe<K extends ConfigKey>(key: K, handler: Handler<K>): Unsubscribe {
@@ -333,6 +337,9 @@ export class ConfigPortImpl implements ConfigPort {
         locale: this.store.get(ConfigKey.UiLocale) ?? DefaultConfig.ui.locale,
         theme: this.store.get(ConfigKey.UiTheme) ?? DefaultConfig.ui.theme,
       },
+      tui: {
+        diffStyle: this.store.get(ConfigKey.TuiDiffStyle) ?? DefaultConfig.tui.diffStyle,
+      },
     };
   }
 
@@ -443,6 +450,8 @@ function getDefaultValue(key: ConfigKey): unknown {
       return defaults.ui.locale;
     case ConfigKey.UiTheme:
       return defaults.ui.theme;
+    case ConfigKey.TuiDiffStyle:
+      return defaults.tui.diffStyle;
     default:
       return undefined;
   }

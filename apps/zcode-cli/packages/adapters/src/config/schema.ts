@@ -1,6 +1,7 @@
 /* eslint-disable max-lines -- zcode-cli 配置 schema 需要集中维护文件解析和 provider 继承，拆散会让配置语义更难对齐。 */
 import { z } from "zod";
 import type { RuntimeConfigPatch } from "@zcode/contracts";
+import { normalizeTuiConfigInput, tuiConfigSchema } from "./tui-config.js";
 
 const stringRecordSchema = z.record(z.string(), z.string());
 const unknownRecordSchema = z.record(z.string(), z.unknown());
@@ -299,6 +300,7 @@ export const ZCodeConfigFileSchema = z
     command: skillCommandOverridesSchema.optional(),
     logging: loggingSchema.optional(),
     ui: uiSchema.optional(),
+    tui: tuiConfigSchema.optional(),
     toolConcurrency: toolConcurrencySchema.optional(),
     modelAnomalyGuard: modelAnomalyGuardSchema.optional(),
     hooks: hooksSchema.optional(),
@@ -313,6 +315,7 @@ export type ConfigDiagnosticSeverity = "warning" | "error";
 export type ConfigDiagnosticCode =
   | "config_file_invalid"
   | "config_mcp_server_invalid"
+  | "config_value_invalid"
   | "config_project_hooks_pending_trust";
 
 export interface ConfigDiagnostic {
@@ -387,7 +390,10 @@ export function parseConfigFileToRuntimePatchWithDiagnostics(
   value: unknown,
 ): ParseConfigFileResult {
   const diagnostics: ConfigDiagnostic[] = [];
-  const normalized = normalizeConfigFileInput(value, diagnostics);
+  const normalizedRoot = normalizeConfigFileInput(value, diagnostics);
+  const normalized = isPlainRecord(normalizedRoot)
+    ? normalizeTuiConfigInput(normalizedRoot, diagnostics)
+    : normalizedRoot;
   const parsed = ZCodeConfigFileSchema.parse(normalized);
   return {
     config: parsedConfigFileToRuntimePatch(parsed),
@@ -416,6 +422,7 @@ function parsedConfigFileToRuntimePatch(parsed: ZCodeConfigFile): RuntimeConfigP
   if (parsed.command) config.commandOverrides = parsed.command;
   if (parsed.logging) config.logging = parsed.logging;
   if (parsed.ui) config.ui = parsed.ui;
+  if (parsed.tui?.diffStyle) config.tui = { diffStyle: parsed.tui.diffStyle };
   if (parsed.toolConcurrency) config.toolConcurrency = parsed.toolConcurrency;
   if (parsed.modelAnomalyGuard) config.modelAnomalyGuard = parsed.modelAnomalyGuard;
   if (parsed.hooks) config.hooks = parsed.hooks;

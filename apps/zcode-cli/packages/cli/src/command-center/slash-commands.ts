@@ -7,7 +7,11 @@ import {
   type CommandCenterCustomCommandListOutcome,
 } from "../command-center-custom.js";
 import { SLASH_COMMAND_HELP_ENTRIES, type SlashCommandHelpEntry } from "./slash-command-help.js";
-import type { SlashCommand } from "./slash-command-types.js";
+import {
+  REVIEW_UNDO_COMMAND_NAMES,
+  type ReviewUndoCommandName,
+  type SlashCommand,
+} from "./slash-command-types.js";
 import { splitArgs } from "./utils.js";
 
 export const AVAILABLE_COMMANDS = SLASH_COMMAND_HELP_ENTRIES.map((entry) => `/${entry.name}`);
@@ -197,6 +201,15 @@ export function parseSlashCommand(input: string): SlashCommand | null {
     };
   }
 
+  if (isReviewUndoCommandName(rawName)) {
+    return {
+      args,
+      name: rawName,
+      rawName,
+      type: "known",
+    };
+  }
+
   if (rawName === "skill") {
     const parsed = parseSkillCommandArgs(args);
     if (!parsed) {
@@ -327,4 +340,8 @@ function parseSkillCommandArgs(args: string): { skillName: string; task: string 
     skillName: trimmed.slice(0, firstWhitespace),
     task: trimmed.slice(firstWhitespace + 1).trim(),
   };
+}
+
+function isReviewUndoCommandName(name: string): name is ReviewUndoCommandName {
+  return (REVIEW_UNDO_COMMAND_NAMES as readonly string[]).includes(name);
 }

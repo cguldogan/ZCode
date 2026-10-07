@@ -876,6 +876,15 @@ export type ParsedRewindCommand =
     }
   | {
       action: "status";
+    }
+  /** `/undo` / `/redo` (specs/tui/diff-review-undo.md §2); args are rejected with usage. */
+  | {
+      action: "undo";
+      args: string;
+    }
+  | {
+      action: "redo";
+      args: string;
     };
 
 export type ContextUsageTokenMethod = "estimated" | "provider_count" | "proportional_estimate";

@@ -50,12 +50,12 @@ export function clampIndex(index: number, length: number): number {
 
 // selectedIndex is global within the filtered rows, so the rendered
 // slice must follow it instead of always drawing the first page.
-export function visibleSelectionItemWindow(
-  items: readonly TuiSelectionItem[],
+export function visibleSelectionItemWindow<T = TuiSelectionItem>(
+  items: readonly T[],
   selectedIndex: number,
   maxVisible: number,
 ): {
-  items: readonly TuiSelectionItem[];
+  items: readonly T[];
   selectedIndex: number;
   startIndex: number;
 } {
@@ -70,10 +70,7 @@ export function visibleSelectionItemWindow(
   const clampedSelectedIndex = clampIndex(selectedIndex, items.length);
   const visibleCount = Math.min(maxVisible, items.length);
   const maxStartIndex = items.length - visibleCount;
-  const startIndex = Math.min(
-    Math.max(0, clampedSelectedIndex - visibleCount + 1),
-    maxStartIndex,
-  );
+  const startIndex = Math.min(Math.max(0, clampedSelectedIndex - visibleCount + 1), maxStartIndex);
 
   return {
     items: items.slice(startIndex, startIndex + visibleCount),

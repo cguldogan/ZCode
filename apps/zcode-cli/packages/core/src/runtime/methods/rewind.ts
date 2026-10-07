@@ -32,6 +32,7 @@ import {
 import type { TurnResult, WorkspaceRewindResult, ParsedRewindCommand } from "../types.js";
 import type { AgentRuntimeInternal } from "../internal.js";
 import { recordTurnUsageFact } from "./usage-observability.js";
+import { executeTurnUndoCommand } from "./turn-undo.js";
 
 export async function executeRewindCommand(
   this: AgentRuntimeInternal,
@@ -68,29 +69,24 @@ export async function executeRewindCommand(
     try {
       throwIfTurnAborted(abortSignal);
       const response =
-        command.action === "status"
-          ? await this.formatRewindStatus()
-          : command.action === "fork"
-            ? (
-                await this.forkWorkspaceFromCheckpoint({
-                  abortSignal,
-                  targetCheckpointId: command.targetCheckpointId,
-                  traceContext: turnTraceContext,
-                })
-              ).response
-            : command.action === "message"
+        command.action === "undo" || command.action === "redo"
+          ? await executeTurnUndoCommand(this, command, {
+              abortSignal,
+              traceContext: turnTraceContext,
+            })
+          : command.action === "status"
+            ? await this.formatRewindStatus()
+            : command.action === "fork"
               ? (
-                  await this.rewindToMessage({
+                  await this.forkWorkspaceFromCheckpoint({
                     abortSignal,
-                    events,
-                    scope: command.scope,
-                    targetMessageId: command.targetMessageId,
+                    targetCheckpointId: command.targetCheckpointId,
                     traceContext: turnTraceContext,
                   })
                 ).response
-              : command.action === "cascade-message"
+              : command.action === "message"
                 ? (
-                    await this.rewindCascadeToMessage({
+                    await this.rewindToMessage({
                       abortSignal,
                       events,
                       scope: command.scope,
@@ -98,14 +94,24 @@ export async function executeRewindCommand(
                       traceContext: turnTraceContext,
                     })
                   ).response
-                : (
-                  await this.rewindWorkspaceToCheckpoint({
-                    abortSignal,
-                    events,
-                    targetCheckpointId: command.targetCheckpointId,
-                    traceContext: turnTraceContext,
-                  })
-                ).response;
+                : command.action === "cascade-message"
+                  ? (
+                      await this.rewindCascadeToMessage({
+                        abortSignal,
+                        events,
+                        scope: command.scope,
+                        targetMessageId: command.targetMessageId,
+                        traceContext: turnTraceContext,
+                      })
+                    ).response
+                  : (
+                      await this.rewindWorkspaceToCheckpoint({
+                        abortSignal,
+                        events,
+                        targetCheckpointId: command.targetCheckpointId,
+                        traceContext: turnTraceContext,
+                      })
+                    ).response;
       throwIfTurnAborted(abortSignal);
 
       const turnUsage = createModelUsageSummaryFromEvents(events);

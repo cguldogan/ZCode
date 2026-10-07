@@ -22,7 +22,9 @@ export const APP_PROTOCOL_APP_ONLY_BUILTIN_SLASH_COMMANDS = [
   },
 ] as const satisfies readonly ZCodeSlashCommand[];
 
-const EXTRA_RESERVED_SLASH_COMMAND_NAMES = ["compress", "plan"] as const;
+// `undo`/`redo` are runtime commands (core parseRewindCommand, specs/tui/diff-review-undo.md §2):
+// a custom command with the same name must not be expanded in their place.
+const EXTRA_RESERVED_SLASH_COMMAND_NAMES = ["compress", "plan", "undo", "redo"] as const;
 
 const RESERVED_SLASH_COMMAND_NAMES = new Set(
   BUILTIN_ZCODE_SLASH_COMMAND_HELP_ENTRIES.flatMap((entry) => [

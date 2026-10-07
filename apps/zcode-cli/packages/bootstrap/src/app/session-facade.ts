@@ -4,6 +4,7 @@ import { resolveLocale } from "@zcode/i18n";
 import { normalizeModelSelection, type ModelSelection } from "@zcode/provider";
 import {
   SESSION_ENTRY_MODEL_SELECTION,
+  normalizeTuiDiffStyle,
   traceContextToLogContext,
   type CollaborationMode,
   type ExecutionPort,
@@ -61,6 +62,7 @@ type SessionFacade = Pick<
   | "getDefaultThoughtLevel"
   | "getThoughtLevel"
   | "getTheme"
+  | "getDiffStyle"
   | "listCheckpoints"
   | "listMcpServers"
   | "listModels"
@@ -310,6 +312,7 @@ export function createSessionFacade(deps: CreateSessionFacadeDeps): SessionFacad
     getModel: () => formatLegacyRuntimeModelValue(deps.runtime.getSessionModelSelection()),
     getLocale: () => currentLocale,
     getTheme: () => deps.configResult.config.ui.theme as UiThemePreference,
+    getDiffStyle: () => normalizeTuiDiffStyle(deps.configResult.config.tui?.diffStyle),
     getDefaultThoughtLevel: () => {
       const registryState = currentRegistrySelection();
       return registryState.owned

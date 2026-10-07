@@ -1,9 +1,10 @@
 import { CliRenderEvents, createCliRenderer, type CliRenderer } from "@mbears/opentui-core";
-import type { UiThemeMode } from "@zcode/contracts";
+import { normalizeTuiDiffStyle, type UiThemeMode } from "@zcode/contracts";
 import { createRoot } from "@mbears/opentui-react";
 import { getZCodeCopy } from "@zcode/i18n";
 import React from "react";
 import { TuiApp } from "./app.js";
+import { TuiDiffStyleContext } from "./app-diff-style.js";
 import { TuiStartupScreen } from "./app-startup.js";
 import { createSelectionCopyHandler, hasCopyableSelectionText } from "./app-copy.js";
 import { activeTuiTheme, resolveTuiThemeMode, setActiveTuiThemeMode } from "./theme/index.js";
@@ -90,24 +91,28 @@ async function runTuiWithRenderer(options: TuiOptions, renderer: CliRenderer): P
     renderer.setBackgroundColor(activeTuiTheme(initialThemeMode).background);
     appMounted = true;
     root.render(
-      React.createElement(TuiApp, {
-        onExit,
-        options: {
-          ...readyOptions,
-          initialThemeMode,
-          setTerminalBackgroundColor: (color) => renderer.setBackgroundColor(color),
-          subscribeThemeMode: (listener) => {
-            themeModeListeners.add(listener);
-            if (terminalThemeMode) listener(terminalThemeMode);
-            return () => {
-              themeModeListeners.delete(listener);
-            };
+      React.createElement(
+        TuiDiffStyleContext.Provider,
+        { value: normalizeTuiDiffStyle(readyOptions.diffStyle) },
+        React.createElement(TuiApp, {
+          onExit,
+          options: {
+            ...readyOptions,
+            initialThemeMode,
+            setTerminalBackgroundColor: (color) => renderer.setBackgroundColor(color),
+            subscribeThemeMode: (listener) => {
+              themeModeListeners.add(listener);
+              if (terminalThemeMode) listener(terminalThemeMode);
+              return () => {
+                themeModeListeners.delete(listener);
+              };
+            },
           },
-        },
-        copySelection,
-        hasCopyableSelection: () =>
-          hasCopyableSelectionText(renderer.getSelection()?.getSelectedText()),
-      }),
+          copySelection,
+          hasCopyableSelection: () =>
+            hasCopyableSelectionText(renderer.getSelection()?.getSelectedText()),
+        }),
+      ),
     );
   };
   const initialize = () => {

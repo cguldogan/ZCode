@@ -1,6 +1,6 @@
 import React from "react";
 import type { ToolResultDisplayLine, ToolTranscriptPart } from "./app-model.js";
-import { ShikiDiffView, diffViewForWidth } from "./app-shiki-diff-view.js";
+import { ShikiDiffView } from "./app-shiki-diff-view.js";
 import { palette } from "./app-model.js";
 import { truncateDisplay } from "./app-terminal-width.js";
 import { activeTuiTheme } from "./theme/index.js";
@@ -91,7 +91,7 @@ function resultDisplayNodes(
         structuredPatch: display.structuredPatch,
         terminalWidth,
         truncated: display.truncated,
-        view: diffViewForWidth(terminalWidth),
+        // Layout comes from the tui.diffStyle context (specs/tui/diff-review-undo.md §3).
       }),
     ];
   }

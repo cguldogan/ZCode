@@ -43,6 +43,8 @@ import type { TuiEffortOption, TuiModeOption, TuiOptions } from "./types.js";
 import type { TuiWorkflowCard } from "./app-workflow-mirror.js";
 import type { SubagentItem, SubagentsController } from "./app-subagents.js";
 import { SubagentView } from "./app-subagent-view.js";
+import type { ReviewPanelController } from "./app-review-panel.js";
+import { ReviewView } from "./app-review-view.js";
 
 const h = React.createElement as (
   type: React.ElementType | string,
@@ -51,6 +53,7 @@ const h = React.createElement as (
 ) => React.ReactElement;
 
 export function AppView(props: {
+  review?: ReviewPanelController;
   subagents?: SubagentsController;
   toggleSidebar?: () => boolean;
   activeTurnId?: TurnId;
@@ -100,7 +103,9 @@ export function AppView(props: {
   workflowCardsByToolCallId?: ReadonlyMap<string, TuiWorkflowCard>;
   expandedWorkflowRunIds?: ReadonlySet<string>;
 }): React.ReactElement {
-  const readOnly = Boolean(props.subagents?.selected);
+  const reviewOpen = Boolean(props.review?.state);
+  // The /review view, like a subagent transcript, replaces the conversation and composer.
+  const readOnly = Boolean(props.subagents?.selected) || reviewOpen;
   const handleShellMouseUp = React.useCallback(() => {
     props.copyCurrentSelection();
     if (!readOnly) props.editorRef.current?.focus();
@@ -166,7 +171,15 @@ export function AppView(props: {
   return h(
     AppShell,
     { onMouseUp: handleShellMouseUp, sidebar, sidebarLayout: props.sidebarLayout },
-    readOnly && props.subagents
+    reviewOpen && props.review
+      ? h(ReviewView, {
+          contentWidth: actionPanelContentWidth,
+          controller: props.review,
+          copy: props.copy,
+          pendingApproval: props.approvalQueue.length > 0,
+        })
+      : null,
+    !reviewOpen && readOnly && props.subagents
       ? h(SubagentView, {
           controller: props.subagents,
           copy: props.copy,

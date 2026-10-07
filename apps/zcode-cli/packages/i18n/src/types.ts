@@ -301,4 +301,24 @@ export interface TuiCopy {
     title: string;
     row(input: { name: string; selected: boolean; summary: string }): string;
   };
+  /** `/review` view (specs/tui/diff-review-undo.md §1). */
+  review: {
+    title: string;
+    loading: string;
+    loadingDiff: string;
+    summary(input: { additions: number; deletions: number; files: number }): string;
+    listHelp: string;
+    diffHelp: string;
+    empty: string;
+    listTruncated: string;
+    binary: string;
+    noTextChanges: string;
+    diffTruncated: string;
+    notGitRepo(directory: string): string;
+    gitUnavailable: string;
+    gitFailed(input: { exitCode?: number; timedOut?: boolean }): string;
+    pendingApproval: string;
+    unavailable: string;
+    closed: string;
+  };
 }

@@ -87,6 +87,7 @@ import type {
   SupportedLocale,
   UiLocale,
   UiThemePreference,
+  TuiDiffStyle,
   WorkflowEvent,
   WorkflowRunListItem,
   ExecutionShellSelection,
@@ -322,6 +323,8 @@ export interface ZCodeApp {
   getModelOption?(selection: ModelSelection): ZCodeModelOption | undefined;
   getLocale(): SupportedLocale;
   getTheme(): UiThemePreference;
+  /** `tui.diffStyle` from config, already validated (specs/tui/diff-review-undo.md §3). */
+  getDiffStyle?(): TuiDiffStyle;
   getDefaultThoughtLevel(): string | undefined;
   getThoughtLevel(): string | undefined;
   loadSessionTranscript(): Promise<SessionTranscriptMessage[]>;

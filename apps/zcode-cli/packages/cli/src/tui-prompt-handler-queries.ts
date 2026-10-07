@@ -11,6 +11,7 @@ export async function readTuiSessionMetadata(app: CommandCenterApp): Promise<Tui
     locale: app.getLocale?.(),
     model: app.getModel?.(),
     theme: app.getTheme?.(),
+    diffStyle: app.getDiffStyle?.(),
     thoughtLevel: app.getThoughtLevel?.(),
     modelOptions,
     effortOptions: (await listAppEffortOptions(app)) ?? [],

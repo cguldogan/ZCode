@@ -21,6 +21,8 @@ export function useSubmitValue(input: {
   emptyPromptStatus: string;
   messageInsertIndex: number;
   onExit?: (code: number) => void;
+  /** Opens the local /review view (specs/tui/diff-review-undo.md §1). */
+  openReview?: () => void;
   options: TuiOptions;
   requestPermission: TuiRequestPermission;
   resolveSubmittedText: (submittedValue: string) => string;
@@ -51,6 +53,14 @@ export function useSubmitValue(input: {
       if (input.onExit && isExitCommand(text)) {
         input.turnRef.current?.abort();
         input.onExit(0);
+        return;
+      }
+
+      // /review is read-only and local, so it opens even while a turn is running.
+      if (input.openReview && isReviewCommand(text)) {
+        input.setDraftValue("");
+        input.setSlashSelection(undefined);
+        input.openReview();
         return;
       }
 
@@ -105,4 +115,10 @@ const EXIT_COMMANDS = new Set(["/exit", "/quit"]);
 
 export function isExitCommand(text: string): boolean {
   return EXIT_COMMANDS.has(text.trim().toLowerCase());
+}
+
+const REVIEW_COMMAND = "/review";
+
+export function isReviewCommand(text: string): boolean {
+  return text.trim().toLowerCase() === REVIEW_COMMAND;
 }

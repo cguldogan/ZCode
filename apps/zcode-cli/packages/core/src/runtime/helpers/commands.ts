@@ -16,6 +16,10 @@ export function parseCompactCommand(input: string): string | undefined | null {
 
 export function parseRewindCommand(input: string): ParsedRewindCommand | null {
   const trimmed = input.trim();
+  const turnUndoCommand = parseTurnUndoCommand(trimmed);
+  if (turnUndoCommand) {
+    return turnUndoCommand;
+  }
   if (trimmed === "/fork") {
     return { action: "fork" };
   }
@@ -100,4 +104,17 @@ function parseForkCommandArgs(args: string): ParsedRewindCommand {
     action: "fork",
     targetCheckpointId: args,
   };
+}
+
+const TURN_UNDO_COMMANDS = ["undo", "redo"] as const;
+
+function parseTurnUndoCommand(trimmed: string): ParsedRewindCommand | null {
+  for (const action of TURN_UNDO_COMMANDS) {
+    const name = `/${action}`;
+    if (trimmed === name) return { action, args: "" };
+    if (trimmed.startsWith(`${name} `)) {
+      return { action, args: trimmed.slice(name.length).trim() };
+    }
+  }
+  return null;
 }

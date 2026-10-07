@@ -5,6 +5,7 @@ import { DEFAULT_LOCALE, type SupportedLocale } from "@zcode/i18n";
 import type { TuiRequestPermission } from "@zcode/tui";
 import type { GlobalOptions } from "@zcode/shared-types";
 import { createCommandCenter, parseSlashCommand } from "./command-center.js";
+import { refuseTurnUndoWhileBusy } from "./command-center/handlers/review-undo.js";
 import type { CommandCenterApp } from "./command-center.js";
 import { resolveDisplayLocale } from "./locale.js";
 import { createCliHeadlessBrowserRuntime } from "./headless-browser.js";
@@ -324,6 +325,8 @@ export function createTuiSubmitPrompt(
     try {
       // Model/effort changes configure subsequent requests, including during an active turn.
       const command = parseSlashCommand(typeof input === "string" ? input : input.text);
+      const busyRefusal = refuseTurnUndoWhileBusy(command);
+      if (busyRefusal) return { kind: "command_result", result: busyRefusal };
       if (command?.type === "known" && (command.name === "model" || command.name === "effort")) {
         return {
           kind: "command_result",

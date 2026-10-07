@@ -8,14 +8,21 @@ import {
   parseRewindTriggeredPayload,
   traceContextToLogContext,
 } from "../deps.js";
-import type {
-  SessionEntryInfo,
-  SessionEvent,
-  TraceContext,
-  TraceId,
-  TurnId,
-} from "../deps.js";
+import type { SessionEntryInfo, SessionEvent, TraceContext, TraceId, TurnId } from "../deps.js";
 import type { AgentRuntimeInternal } from "../internal.js";
+import { TURN_REDO_REWIND_REASON, TURN_UNDO_REWIND_REASON } from "../helpers/turn-undo-history.js";
+
+// file_summary_rewind = files of a turn reverted (desktop summary revert and /undo);
+// turn_redo = /redo re-applied them. Both are durable facts that /undo-/redo state is derived
+// from after a cold resume (specs/tui/diff-review-undo.md §2).
+const PERSISTED_WORKSPACE_REWIND_REASONS: ReadonlySet<string> = new Set([
+  TURN_UNDO_REWIND_REASON,
+  TURN_REDO_REWIND_REASON,
+]);
+
+function isPersistedWorkspaceRewindReason(reason: string | undefined): boolean {
+  return reason !== undefined && PERSISTED_WORKSPACE_REWIND_REASONS.has(reason);
+}
 
 interface PersistedWorkspaceEvent {
   eventId: string;
@@ -68,7 +75,12 @@ export async function persistWorkspaceFileRewindEntry(
   if (!runtime.sessionStore?.saveSessionEntry) return;
 
   const payload = parseRewindTriggeredPayload(event.payload);
-  if (payload.scope !== RewindScope.Workspace || payload.reason !== "file_summary_rewind") return;
+  if (
+    payload.scope !== RewindScope.Workspace ||
+    !isPersistedWorkspaceRewindReason(payload.reason)
+  ) {
+    return;
+  }
 
   try {
     const timestamp = event.timestamp.getTime();
@@ -215,7 +227,7 @@ export async function restoreWorkspaceFileRewindEntries(
       const payload = parseRewindTriggeredPayload(data.payload);
       if (
         payload.scope !== RewindScope.Workspace ||
-        payload.reason !== "file_summary_rewind" ||
+        !isPersistedWorkspaceRewindReason(payload.reason) ||
         existingRewindIds.has(payload.rewindId)
       ) {
         continue;

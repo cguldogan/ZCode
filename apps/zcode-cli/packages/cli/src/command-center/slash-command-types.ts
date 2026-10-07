@@ -123,6 +123,16 @@ export type SlashCommand =
     }
   | {
       args: string;
+      /** specs/tui/diff-review-undo.md: TUI review view and runtime /undo, /redo. */
+      name: ReviewUndoCommandName;
+      rawName: string;
+      type: "known";
+    }
+  | {
+      args: string;
       rawName: string;
       type: "unknown";
     };
+
+export const REVIEW_UNDO_COMMAND_NAMES = ["review", "undo", "redo"] as const;
+export type ReviewUndoCommandName = (typeof REVIEW_UNDO_COMMAND_NAMES)[number];

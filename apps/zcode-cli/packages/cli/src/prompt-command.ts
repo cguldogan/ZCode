@@ -9,6 +9,7 @@ import {
   parseSlashCommand,
 } from "./command-center.js";
 import { loadCliDotenv } from "./env.js";
+import { runReviewSummaryCommand } from "./workspace-review/review-prompt-command.js";
 import { createCliHeadlessBrowserRuntime } from "./headless-browser.js";
 import {
   createHeadlessPermissionBroker,
@@ -82,6 +83,10 @@ export const runPrompt = async (
       `${formatSlashCommandHelp(slashCommand.args, await listCustomCommandsForPrompt(deps))}\n`,
     );
     return 0;
+  }
+  if (slashCommand?.type === "known" && slashCommand.name === "review") {
+    const workspaceDirectory = (deps.cwd ?? process.cwd)();
+    return await runReviewSummaryCommand(ctx, { args: slashCommand.args, workspaceDirectory });
   }
   if (slashCommand?.type === "known" && slashCommand.name === "skill" && !slashCommand.skillName) {
     return await runSkillsCommand(ctx, options, deps, []);
