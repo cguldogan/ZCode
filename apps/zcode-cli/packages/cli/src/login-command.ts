@@ -3,6 +3,7 @@ import type { GlobalOptions, RunContext } from "@zcode/shared-types";
 import { loadBootstrapModule } from "./bootstrap-loader.js";
 import { loadCliDotenv } from "./env.js";
 import type { RunDependencies } from "./cli-types.js";
+import { LOCAL_ONLY_ACCOUNT_MESSAGE, ZCODE_VENDOR_ACCOUNTS_ENABLED } from "./local-only.js";
 
 export async function runLoginCommand(
   ctx: RunContext,
@@ -11,6 +12,11 @@ export async function runLoginCommand(
   noBrowser: boolean,
   args: readonly string[] = [],
 ): Promise<number> {
+  // Single gate for `zcode login` and prompt-mode `/login`; no network is attempted.
+  if (!ZCODE_VENDOR_ACCOUNTS_ENABLED) {
+    ctx.stderr.write(`${LOCAL_ONLY_ACCOUNT_MESSAGE}\n`);
+    return 1;
+  }
   try {
     const providerId = args[0] ?? "zai";
     if (args.length > 1 || (providerId !== "zai" && providerId !== "bigmodel")) {
@@ -88,6 +94,11 @@ export async function runLogoutCommand(
   options: GlobalOptions,
   deps: RunDependencies,
 ): Promise<number> {
+  // Single gate for `zcode logout` and prompt-mode `/logout`.
+  if (!ZCODE_VENDOR_ACCOUNTS_ENABLED) {
+    ctx.stderr.write(`${LOCAL_ONLY_ACCOUNT_MESSAGE}\n`);
+    return 1;
+  }
   try {
     const env = deps.env ?? process.env;
     const workingDirectory = (deps.cwd ?? process.cwd)();

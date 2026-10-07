@@ -167,7 +167,32 @@ Acceptance: a CLI prompt through LiteLLM succeeds and logs only localhost
 connections; `fetch("https://zcode.z.ai")` inside a guarded process rejects with
 `ZCODE_EGRESS_BLOCKED` without a DNS lookup; `https://example.com` is unaffected.
 
-## 7. Migration boundary
+## 7. Local-only: no vendor accounts
+
+Purpose of this fork: work with local LLMs (LiteLLM, localhost, LAN). Vendor
+accounts can never work behind the §6 egress block, so they are removed rather
+than left as dead ends.
+
+- Single owner: build-time constant `ZCODE_VENDOR_ACCOUNTS_ENABLED = false`
+  (`packages/shared/src/env.ts`).
+- Bundled provider config ships no `account:*` providers (Z.ai/BigModel coding,
+  start and off-peak plans) and no templates for China-operated APIs (Z.ai,
+  BigModel, Kimi, MiniMax, DeepSeek, Alibaba Qwen, Xiaomi MiMo). Their model
+  rules go with them. Non-Chinese templates (OpenAI, Anthropic, xAI,
+  OpenRouter, OpenCode, LiteLLM) and custom providers stay.
+- CLI: `zcode login`, `zcode logout`, `/login` and `/logout` answer
+  "not available in this local-only build" and exit non-zero; help text no
+  longer lists them.
+- Desktop: the welcome/login screen never opens (all open reasons are inert)
+  and the account "Connect" entry is hidden. Users add providers in
+  Settings → Model settings.
+- Existing credentials files are left untouched (no migration, no deletion).
+
+Acceptance: `zcode login zai` prints the local-only message without network
+activity; `zcode --help` lists no login commands; the provider picker shows no
+Zhipu group; the desktop starts straight into the workspace.
+
+## 8. Migration boundary
 
 Re-enabling remote updates means flipping the constant and rebuilding. A
 vendor release with a higher revision would then replace the bundled templates,

@@ -58,6 +58,13 @@ export const ZCODE_TELEMETRY_ENABLED: boolean = false;
  */
 export const ZCODE_REMOTE_UPDATES_ENABLED: boolean = false;
 
+/**
+ * Local-only fork: no Z.ai/BigModel accounts. false = login/logout commands answer "not
+ * available", the desktop welcome/login screen never opens and the account entry is hidden.
+ * Spec: specs/self-hosted-build/remote-updates-and-litellm.md §7.
+ */
+export const ZCODE_VENDOR_ACCOUNTS_ENABLED: boolean = false;
+
 /** 数仓事件上报端点：由运行时环境变量提供，未配置即停用，构建产物不内嵌。 */
 export const ZCODE_TELEMETRY_REPORT_ENDPOINT =
   typeof process !== "undefined" ? (process.env.ZCODE_TELEMETRY_REPORT_ENDPOINT ?? "") : "";

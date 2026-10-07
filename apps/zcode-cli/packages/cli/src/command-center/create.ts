@@ -4,6 +4,7 @@ import {
   listCustomCommandsForHelp,
 } from "../command-center-custom.js";
 import { formatNewSessionResult, formatResumeResult } from "./formatters.js";
+import { LOCAL_ONLY_ACCOUNT_MESSAGE, ZCODE_VENDOR_ACCOUNTS_ENABLED } from "../local-only.js";
 import { handleCustomCommand } from "./handlers/custom.js";
 import { handleDwfCommand } from "./handlers/dwf.js";
 import { handleEffortCommand } from "./handlers/effort.js";
@@ -80,6 +81,10 @@ export function createCommandCenter(deps: CommandCenterDeps): TuiSubmitPrompt {
           mode: deps.getMode?.(),
           response: formatSlashCommandHelp(command.args, customCommands),
         };
+      }
+
+      if (!ZCODE_VENDOR_ACCOUNTS_ENABLED && (command.name === "login" || command.name === "logout")) {
+        return { mode: deps.getMode?.(), response: LOCAL_ONLY_ACCOUNT_MESSAGE };
       }
 
       if (command.name === "login") {

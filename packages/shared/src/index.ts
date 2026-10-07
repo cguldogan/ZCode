@@ -69,6 +69,7 @@ export {
   ZCODE_ARMS_RUM_ENDPOINT,
   ZCODE_TELEMETRY_ENABLED,
   ZCODE_REMOTE_UPDATES_ENABLED,
+  ZCODE_VENDOR_ACCOUNTS_ENABLED,
   mapZCodeEnvToArmsRumEnv,
   normalizeZCodeEnv,
   normalizeZCodeProductFlavor,

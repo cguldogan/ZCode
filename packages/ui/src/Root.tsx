@@ -4,6 +4,7 @@ import { LucideProvider, RefreshCw } from "lucide-react";
 import {
   APP_RUNTIME_PREFERENCES_CHANGED_BROADCAST_CHANNEL,
   DesktopCommandIds,
+  ZCODE_VENDOR_ACCOUNTS_ENABLED,
   appRuntimePreferencesChangedBroadcastPayloadSchema,
   type RemoteTarget,
 } from "@zcode/shared";
@@ -202,10 +203,16 @@ function RootInner({
     refresh: refreshAppSettings,
     update: updateAppSettings,
   } = useSettings();
-  const [welcomeScreenOpenReason, setWelcomeScreenOpenReason] =
+  const [welcomeScreenOpenReasonState, setWelcomeScreenOpenReason] =
     useState<WelcomeScreenOpenReason | null>(() =>
       consumeZcodeJwtInvalidRestartMarker() ? "session-expired" : null,
     );
+  // Local-only fork: vendor accounts are removed, so no open reason (startup, logout, session
+  // expiry, "Connect" requests) may show the login screen. Gating the derived value keeps every
+  // existing writer intact. Spec: specs/self-hosted-build/remote-updates-and-litellm.md §7.
+  const welcomeScreenOpenReason = ZCODE_VENDOR_ACCOUNTS_ENABLED
+    ? welcomeScreenOpenReasonState
+    : null;
   const [providerFamilyDomainMigrationComplete, setProviderFamilyDomainMigrationComplete] =
     useState(false);
   const loginEntryRequest = useZCodeStore((state) => state.loginEntryRequest);
@@ -959,7 +966,7 @@ function RootInner({
     onCreateTask: handleCreateTask,
     onOpenWorkspace: handleOpenWorkspace,
     allowOpenWorkspace,
-    onLogin: !user ? handleOpenLoginEntry : undefined,
+    onLogin: ZCODE_VENDOR_ACCOUNTS_ENABLED && !user ? handleOpenLoginEntry : undefined,
     onLogout: user ? handleLogout : undefined,
     user,
   };
@@ -1057,7 +1064,7 @@ function RootInner({
             allowRemoteWorkspace={allowRemoteWorkspace}
             handleBackFromSettings={handleBackFromSettings}
             handleLogout={user ? handleLogout : undefined}
-            onLogin={!user ? handleOpenLoginEntry : undefined}
+            onLogin={ZCODE_VENDOR_ACCOUNTS_ENABLED && !user ? handleOpenLoginEntry : undefined}
             user={user}
             reconnectingRemoteWorkspaceKeys={reconnectingRemoteWorkspaceKeys}
             remoteWorkspaceErrorByWorkspaceKey={remoteWorkspaceErrorByWorkspaceKey}

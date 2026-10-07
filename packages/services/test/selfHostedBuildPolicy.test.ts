@@ -3,7 +3,12 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { decodeZCodeBuiltinRelease } from "@zcode/provider-node";
-import { ZCODE_REMOTE_UPDATES_ENABLED, ZCODE_TELEMETRY_ENABLED } from "@zcode/shared";
+import {
+  isChinaEgressBlockedUrl,
+  ZCODE_REMOTE_UPDATES_ENABLED,
+  ZCODE_TELEMETRY_ENABLED,
+  ZCODE_VENDOR_ACCOUNTS_ENABLED,
+} from "@zcode/shared";
 
 // Guards specs/self-hosted-build/remote-updates-and-litellm.md against upstream merges that
 // silently flip the policy or drop the LiteLLM template.
@@ -28,4 +33,28 @@ test("bundled provider config ships the LiteLLM template", async () => {
   assert.equal(config.api?.type, "openai-chat-completions");
   assert.equal(config.api?.baseUrl, "http://localhost:4000/v1");
   assert.equal(config.access?.type, "api-key");
+});
+
+test("local-only build has vendor accounts disabled", () => {
+  assert.equal(ZCODE_VENDOR_ACCOUNTS_ENABLED, false);
+});
+
+test("bundled provider config ships no vendor accounts and nothing China-operated", async () => {
+  const raw = JSON.parse(await readFile(bundledConfigPath, "utf8"));
+  const release = decodeZCodeBuiltinRelease(raw);
+  assert.deepEqual([...release.config.providers.keys()], []);
+  const templateIds = [...release.config.providerTemplates.keys()];
+  assert.ok(templateIds.includes("litellm"));
+  for (const templateId of templateIds) {
+    const baseUrl = release.config.providerTemplates.get(templateId)?.config.toJSON().api?.baseUrl;
+    assert.equal(isChinaEgressBlockedUrl(baseUrl ?? ""), false, `${templateId}: ${baseUrl}`);
+  }
+  const rules = raw.config.modelConfigRules as {
+    templateModelRules: Array<{ templateId: string }>;
+    builtinProviderModelRules: unknown[];
+  };
+  assert.deepEqual(rules.builtinProviderModelRules, []);
+  for (const rule of rules.templateModelRules) {
+    assert.ok(templateIds.includes(rule.templateId), `orphan model rule for ${rule.templateId}`);
+  }
 });

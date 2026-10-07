@@ -46,7 +46,9 @@ export function ProviderTemplatePicker({
       id: "other",
       templates: templates.filter((template) => !zhipuIds.includes(template.templateId)),
     },
-  ] as const;
+    // Local-only fork ships no Zhipu templates; drop the empty heading. "other" always renders
+    // because it also hosts "Create custom provider".
+  ].filter((group) => group.id === "other" || group.templates.length > 0);
   const createWithFeedback = async (create: () => Promise<void>) => {
     const feedbackKey = "provider-template-create";
     dismissFeedback(feedbackKey);

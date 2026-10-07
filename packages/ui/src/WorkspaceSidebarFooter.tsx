@@ -7,6 +7,7 @@ import {
   TID_LOGIN_TRIGGER,
   TID_LOGOUT_BUTTON,
   TID_TASK_SETTINGS_BUTTON,
+  ZCODE_VENDOR_ACCOUNTS_ENABLED,
 } from "@zcode/shared";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.js";
@@ -74,6 +75,10 @@ function getSidebarProfileBadge(
 ): string {
   if (user) {
     return getSidebarProfileName(user);
+  }
+  // Local-only fork: there is no account to connect, so the footer is not a "Connect" prompt.
+  if (!ZCODE_VENDOR_ACCOUNTS_ENABLED) {
+    return "ZCode";
   }
 
   return formatMessage({ id: "sidebar.profile.notLoggedIn" });
