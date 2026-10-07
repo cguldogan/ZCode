@@ -1,3 +1,4 @@
+import { PRODUCT_DISPLAY_NAME } from "./branding.js";
 const ZCODE_PROCESS_PREFIX = "zcode";
 const MAX_PROCESS_NAME_SEGMENT_LENGTH = 24;
 
@@ -49,7 +50,8 @@ export function formatZCodeHostProcessName(label?: string): string {
 
 export function formatZCodeRendererProcessName(windowTitle?: string): string {
   const normalizedTitle = windowTitle?.trim();
-  if (!normalizedTitle || normalizedTitle === "ZCode") {
+  // Main window title is the product name; the upstream "ZCode" title is still accepted.
+  if (!normalizedTitle || normalizedTitle === PRODUCT_DISPLAY_NAME || normalizedTitle === "ZCode") {
     return joinZCodeProcessName("renderer", "main");
   }
 

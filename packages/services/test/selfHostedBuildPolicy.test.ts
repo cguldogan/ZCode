@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { decodeZCodeBuiltinRelease } from "@zcode/provider-node";
 import {
   isChinaEgressBlockedUrl,
+  PRODUCT_DISPLAY_NAME,
   ZCODE_REMOTE_UPDATES_ENABLED,
   ZCODE_TELEMETRY_ENABLED,
   ZCODE_VENDOR_ACCOUNTS_ENABLED,
@@ -56,5 +57,18 @@ test("bundled provider config ships no vendor accounts and nothing China-operate
   assert.deepEqual(rules.builtinProviderModelRules, []);
   for (const rule of rules.templateModelRules) {
     assert.ok(templateIds.includes(rule.templateId), `orphan model rule for ${rule.templateId}`);
+  }
+});
+
+test("ZCode Beyond desktop identity matches the brand and never reuses ZCode's bundle id", async () => {
+  // @ts-expect-error -- plain build-time ESM script without type declarations
+  const identity = await import("../../desktop/scripts/desktop-product-identity.mjs");
+  const { production, preview } = identity.desktopProductIdentities;
+  assert.equal(PRODUCT_DISPLAY_NAME, "ZCode Beyond");
+  assert.equal(production.productName, PRODUCT_DISPLAY_NAME);
+  assert.equal(preview.productName, `${PRODUCT_DISPLAY_NAME} Preview`);
+  for (const { appId } of [production, preview]) {
+    assert.ok(appId.startsWith("io.github.cguldogan.zcodebeyond"), appId);
+    assert.ok(!appId.startsWith("dev.zcode"), appId);
   }
 });

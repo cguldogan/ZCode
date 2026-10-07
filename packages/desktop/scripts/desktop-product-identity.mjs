@@ -5,21 +5,24 @@
  */
 export const ZCODE_PREVIEW_IDENTITY_ENV = "ZCODE_PREVIEW_IDENTITY";
 
+// ZCode Beyond: own name and bundle id so it never collides with an official ZCode install.
+// productName mirrors PRODUCT_DISPLAY_NAME (packages/shared/src/branding.ts); a policy test
+// keeps them equal. Spec: specs/self-hosted-build/branding.md.
 const PRODUCTION_IDENTITY = Object.freeze({
   flavor: "production",
-  appId: "dev.zcode.app",
-  productName: "ZCode",
-  linuxExecutableName: "zcode",
-  linuxPackageName: "zcode",
+  appId: "io.github.cguldogan.zcodebeyond",
+  productName: "ZCode Beyond",
+  linuxExecutableName: "zcode-beyond",
+  linuxPackageName: "zcode-beyond",
   cuaHelperInstallVariant: null,
 });
 
 const PREVIEW_IDENTITY = Object.freeze({
   flavor: "preview",
-  appId: "dev.zcode.app.preview",
-  productName: "ZCode Preview",
-  linuxExecutableName: "zcode-preview",
-  linuxPackageName: "zcode-preview",
+  appId: "io.github.cguldogan.zcodebeyond.preview",
+  productName: "ZCode Beyond Preview",
+  linuxExecutableName: "zcode-beyond-preview",
+  linuxPackageName: "zcode-beyond-preview",
   cuaHelperInstallVariant: "preview",
 });
 

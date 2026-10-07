@@ -14,6 +14,7 @@ import {
   createWindowsCaptionControlsStyle,
   WINDOWS_CAPTION_CONTROLS_RIGHT_INSET_VAR,
 } from "@/windowCaptionControls.js";
+import { PRODUCT_DISPLAY_NAME } from "@zcode/shared";
 
 interface DesktopTopOverlayProps {
   workspaceAbsPath: string;
@@ -141,7 +142,7 @@ export function DesktopTopOverlay({
             >
               <img
                 src={appLogoUrl}
-                alt="ZCode"
+                alt={PRODUCT_DISPLAY_NAME}
                 className="size-5 transition-opacity duration-150 group-hover:opacity-0"
                 draggable={false}
               />

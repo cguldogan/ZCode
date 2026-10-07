@@ -75,6 +75,7 @@ export {
   normalizeZCodeProductFlavor,
 } from "./env.js";
 export * from "./errors.js";
+export { PRODUCT_DISPLAY_NAME, PRODUCT_HOMEPAGE_URL } from "./branding.js";
 export {
   CHINA_EGRESS_BLOCKED_HOST_SUFFIXES,
   isChinaEgressBlockedHost,

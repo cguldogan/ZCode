@@ -5740,7 +5740,7 @@ const zhCN: Record<string, string> = {
   "resourceManager.cpu": "CPU",
   "resourceManager.memory": "内存",
   "resourceManager.storage": "存储",
-  "resourceManager.appUsage": "ZCode",
+  "resourceManager.appUsage": "ZCode Beyond",
   "resourceManager.systemUsage": "整机",
   "resourceManager.category.base": "基础服务",
   "resourceManager.category.builtinPlugin": "内置插件",

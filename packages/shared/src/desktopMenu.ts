@@ -1,4 +1,5 @@
 import { DEFAULT_LOCALE, type Locale } from "./protocol.js";
+import { PRODUCT_DISPLAY_NAME } from "./branding.js";
 
 export const desktopMenuMessageIds = {
   file: "titleBar.menu.file",
@@ -107,7 +108,7 @@ export const desktopMenuMessages: Record<Locale, DesktopMenuLocaleMessages> = {
     "desktopMenu.help.downloadingUpdateProgress": "正在下载更新... {progress}",
     "desktopMenu.help.restartToUpdate": "重启以更新（{version}）",
     "dock.menu.showCurrentWindow": "显示当前窗口",
-    "tray.tooltip": "ZCode",
+    "tray.tooltip": PRODUCT_DISPLAY_NAME,
     "tray.menu.openZCode": "打开 ZCode",
     "tray.menu.quit": "退出",
   },
@@ -159,7 +160,7 @@ export const desktopMenuMessages: Record<Locale, DesktopMenuLocaleMessages> = {
     "desktopMenu.help.downloadingUpdateProgress": "Downloading update... {progress}",
     "desktopMenu.help.restartToUpdate": "Restart to update ({version})",
     "dock.menu.showCurrentWindow": "Show current window",
-    "tray.tooltip": "ZCode",
+    "tray.tooltip": PRODUCT_DISPLAY_NAME,
     "tray.menu.openZCode": "Open ZCode",
     "tray.menu.quit": "Quit",
   },

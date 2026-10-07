@@ -1,3 +1,15 @@
+# ZCode Beyond notice
+
+ZCode Beyond is a modified version of ZCode by the ZCode authors
+(https://github.com/zai-org/ZCode), licensed under the Apache License, Version 2.0
+(see LICENSE). Modifications by Can Guldogan and contributors, 2026; the change
+history is the git log of this repository. ZCode Beyond is not affiliated with or
+endorsed by the ZCode authors, and "ZCode" remains the name of the original product.
+
+The original ZCode notice follows unchanged.
+
+---
+
 # ZCode Feature Notes and Third-Party Component Notices
 
 This notice applies to the source code published in this repository and its build artifacts.

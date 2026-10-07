@@ -2,6 +2,7 @@
 import type { Locale, UserInfo } from "@zcode/shared";
 import { memo, useCallback, useEffect, useState } from "react";
 import {
+  PRODUCT_DISPLAY_NAME,
   DesktopCommandIds,
   TID_LOGIN_MENU_ITEM,
   TID_LOGIN_TRIGGER,
@@ -66,7 +67,7 @@ function getSidebarProfileName(user?: UserInfo | null): string {
     return username;
   }
 
-  return "ZCode";
+  return PRODUCT_DISPLAY_NAME;
 }
 
 function getSidebarProfileBadge(
@@ -78,7 +79,7 @@ function getSidebarProfileBadge(
   }
   // Local-only fork: there is no account to connect, so the footer is not a "Connect" prompt.
   if (!ZCODE_VENDOR_ACCOUNTS_ENABLED) {
-    return "ZCode";
+    return PRODUCT_DISPLAY_NAME;
   }
 
   return formatMessage({ id: "sidebar.profile.notLoggedIn" });

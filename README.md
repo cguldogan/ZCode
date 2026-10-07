@@ -1,14 +1,30 @@
-# ZCode
+# ZCode Beyond
 
 <div align="center">
-  <img src="public/logo/icons/1024x1024.png" alt="ZCode" width="128" height="128" />
+  <img src="public/logo/icons/1024x1024.png" alt="ZCode Beyond" width="128" height="128" />
 </div>
-<p align="center">
-  <a href="https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=47ag983c-8fcb-4d6d-814b-5395193a712c&amp;qr_code=true">Feishu community</a> ·
-  <a href="https://discord.gg/z9aBcQXZQ3">Discord</a>
-</p>
 
-ZCode is an AI coding workspace with desktop, browser, and terminal interfaces. This repository contains the clients, backend services, shared UI, and Agent CLI and runtime source code.
+ZCode Beyond is an AI coding workspace (desktop app and terminal `zcode` CLI) for
+**local LLMs only**. It is a modified, independent derivative of
+[ZCode](https://github.com/zai-org/ZCode) (`zai-org`), licensed under Apache-2.0,
+and is not affiliated with or endorsed by the ZCode authors. See [NOTICE.md](NOTICE.md).
+
+## How it differs from ZCode
+
+- **Local models first:** a LiteLLM provider preset (`http://localhost:4000/v1`)
+  with "Load models" discovery from any OpenAI-compatible server.
+- **No vendor accounts:** Z.ai/BigModel login, coding plans and their providers are
+  removed; `zcode login`/`logout` are disabled.
+- **No China egress:** every process blocks connections to China-operated services
+  (the vendor, Alibaba Cloud, Tencent, ByteDance Lark, Chinese model APIs, any `.cn`
+  host) before DNS.
+- **No telemetry, no remote control:** Alibaba ARMS and analytics reporting are off at
+  build time; no auto-update, forced update or remote provider configuration.
+- **TUI extras:** status line with tokens/s, `/exit`, real context window, and
+  hold-to-delete-faster (Backspace held 3 s deletes by word).
+
+Design notes live in [`specs/`](specs/). Upstream releases are reviewed before being
+merged (`git remote upstream` → `zai-org/ZCode`, push disabled).
 
 | Interface                    | Purpose                                                                                   | Development command            |
 | ---------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------ |
