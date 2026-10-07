@@ -1,0 +1,49 @@
+name: Set up workspace
+description: >-
+  Install pnpm (version from package.json "packageManager") and Node.js 24.14.0
+  (mise.toml), restore the pnpm store cache, and run a frozen-lockfile install.
+  Electron is fetched from the official GitHub release mirror only
+  (specs/self-hosted-build/ci-release.md, "Trust and egress").
+
+inputs:
+  skip-electron-binary:
+    description: Skip the Electron runtime download during install (jobs that never launch or package Electron).
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Install pnpm
+      uses: pnpm/action-setup@v6
+
+    - name: Install Node.js
+      uses: actions/setup-node@v6
+      with:
+        # Keep in sync with mise.toml [tools] node.
+        node-version: "24.14.0"
+        cache: pnpm
+
+    - name: Refuse China-operated mirrors
+      shell: bash
+      run: |
+        # The fork forbids npmmirror.com and any other China-operated mirror or CDN
+        # (specs/self-hosted-build/remote-updates-and-litellm.md §6). Fail fast if a
+        # caller or repository variable points the Electron downloads elsewhere.
+        for name in ELECTRON_MIRROR ELECTRON_BUILDER_BINARIES_MIRROR; do
+          value="${!name:-}"
+          case "$value" in
+            https://github.com/*) ;;
+            *) echo "::error::$name must be an https://github.com/ release mirror (got '${value}')"; exit 1 ;;
+          esac
+        done
+        if grep -lE 'npmmirror|aliyun|\.cn(/|$)' .npmrc apps/zcode-cli/.npmrc 2>/dev/null; then
+          echo "::error::an .npmrc points at a China-operated registry"; exit 1
+        fi
+
+    - name: Install dependencies
+      shell: bash
+      env:
+        HUSKY: "0"
+        ELECTRON_SKIP_BINARY_DOWNLOAD: ${{ inputs.skip-electron-binary == 'true' && '1' || '' }}
+      run: pnpm install --frozen-lockfile

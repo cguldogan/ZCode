@@ -1,0 +1,73 @@
+# Checks every push and pull request. Spec: specs/self-hosted-build/ci-release.md
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Official GitHub release mirrors only; never npmmirror.com (fork egress rule).
+  ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/
+  ELECTRON_BUILDER_BINARIES_MIRROR: https://github.com/electron-userland/electron-builder-binaries/releases/download/
+  ZCODE_SKIP_REMOTE_ASSETS: "1"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  checks:
+    name: Typecheck, lint, tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up workspace
+        uses: ./.github/actions/setup-workspace
+        with:
+          skip-electron-binary: "true"
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Architecture check
+        run: pnpm architecture:check
+
+      # TUI tests import sibling workspace dists, so the CLI chain is built first.
+      - name: Build CLI chain
+        run: pnpm --filter "@zcode/cli..." build
+
+      - name: CLI typecheck
+        # turbo lives in the root node_modules/.bin (hoisted), so run it from the root.
+        run: pnpm exec turbo --skip-infer --cwd apps/zcode-cli run typecheck
+
+      - name: Test packages/services
+        working-directory: packages/services
+        run: node --import tsx --test test/*.test.ts
+
+      - name: Test packages/ui
+        working-directory: packages/ui
+        run: node --import tsx --test test/*.test.ts
+
+      - name: Test CLI
+        working-directory: apps/zcode-cli/packages/cli
+        run: node --import tsx --test test/*.test.ts
+
+      - name: Test TUI
+        working-directory: apps/zcode-cli/packages/tui
+        run: '"$GITHUB_WORKSPACE/node_modules/.bin/tsx" --test test/*.test.ts'

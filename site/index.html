@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="referrer" content="no-referrer" />
+    <!-- Static page: no external fonts, scripts, CDNs, analytics or cookies. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"
+    />
+    <title>ZCode Beyond</title>
+    <meta
+      name="description"
+      content="ZCode Beyond: an AI coding workspace (desktop app and zcode CLI) for local LLMs only. No telemetry, no vendor accounts."
+    />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <style>
+      :root {
+        --bg: #fafaf9;
+        --surface: #ffffff;
+        --surface-2: #f2f2f0;
+        --border: #e2e1dd;
+        --text: #1c1b19;
+        --muted: #5d5b56;
+        --accent: #2f6fdb;
+        --accent-text: #ffffff;
+        --accent-soft: #e6eefb;
+        --code-bg: #f2f2f0;
+        --warn-bg: #fff6e0;
+        --warn-border: #f0d48a;
+        --radius: 10px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #141413;
+          --surface: #1c1c1a;
+          --surface-2: #232321;
+          --border: #33322f;
+          --text: #ecebe7;
+          --muted: #a5a39d;
+          --accent: #6b9ef0;
+          --accent-text: #0d1420;
+          --accent-soft: #1d2a40;
+          --code-bg: #232321;
+          --warn-bg: #2b2516;
+          --warn-border: #5c4c21;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          16px/1.6 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          "Helvetica Neue",
+          Arial,
+          sans-serif;
+        overflow-wrap: anywhere;
+      }
+      a {
+        color: var(--accent);
+      }
+      code,
+      pre {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+        font-size: 0.9em;
+      }
+      code {
+        background: var(--code-bg);
+        padding: 0.1em 0.35em;
+        border-radius: 4px;
+      }
+      pre {
+        background: var(--code-bg);
+        padding: 12px 14px;
+        border-radius: 8px;
+        overflow-x: auto;
+        overflow-wrap: normal;
+        line-height: 1.5;
+      }
+      pre code {
+        background: none;
+        padding: 0;
+      }
+      .wrap {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 0 16px;
+      }
+      header.hero {
+        padding: 48px 0 24px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .brand img {
+        width: 64px;
+        height: 64px;
+        border-radius: 14px;
+        flex: none;
+      }
+      h1 {
+        font-size: 2rem;
+        line-height: 1.2;
+        margin: 0;
+      }
+      .tagline {
+        color: var(--muted);
+        margin: 4px 0 0;
+        font-size: 1.05rem;
+      }
+      h2 {
+        font-size: 1.4rem;
+        margin: 40px 0 12px;
+      }
+      h3 {
+        font-size: 1.05rem;
+        margin: 0 0 8px;
+      }
+      section p {
+        margin: 8px 0;
+      }
+      ul.features {
+        padding-left: 20px;
+        margin: 8px 0;
+      }
+      ul.features li {
+        margin: 6px 0;
+      }
+      .note {
+        background: var(--warn-bg);
+        border: 1px solid var(--warn-border);
+        border-radius: var(--radius);
+        padding: 10px 14px;
+        margin: 12px 0;
+        font-size: 0.95rem;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 12px;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px;
+      }
+      .card.suggested {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 1px var(--accent);
+      }
+      .card .meta {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin: 0 0 12px;
+      }
+      .badge {
+        display: none;
+        font-size: 0.75rem;
+        background: var(--accent-soft);
+        color: var(--accent);
+        border-radius: 999px;
+        padding: 1px 8px;
+        margin-left: 6px;
+        vertical-align: middle;
+      }
+      .card.suggested .badge {
+        display: inline-block;
+      }
+      .buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .btn {
+        display: inline-block;
+        text-decoration: none;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        border: 1px solid var(--accent);
+      }
+      .btn.primary {
+        background: var(--accent);
+        color: var(--accent-text);
+      }
+      .btn.secondary {
+        background: transparent;
+        color: var(--accent);
+      }
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 20px;
+        margin: 12px 0;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.95rem;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 8px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      .table-scroll {
+        overflow-x: auto;
+      }
+      details {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 10px 14px;
+        margin: 10px 0;
+      }
+      details summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+      footer {
+        margin: 56px 0 32px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      @media (max-width: 480px) {
+        header.hero {
+          padding-top: 28px;
+        }
+        h1 {
+          font-size: 1.6rem;
+        }
+        .brand img {
+          width: 52px;
+          height: 52px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="hero">
+        <div class="brand">
+          <img src="logo.png" alt="" width="64" height="64" />
+          <div>
+            <h1>ZCode Beyond</h1>
+            <p class="tagline">
+              An AI coding workspace — desktop app and <code>zcode</code> terminal CLI — for local
+              LLMs only.
+            </p>
+          </div>
+        </div>
+        <p>
+          ZCode Beyond is a modified, independent derivative of
+          <a href="https://github.com/zai-org/ZCode">ZCode</a>, licensed under Apache-2.0. It is not
+          affiliated with or endorsed by the ZCode authors.
+        </p>
+        <div class="links">
+          <a href="#download">Download</a>
+          <a href="#install">Install notes</a>
+          <a href="#litellm">LiteLLM setup</a>
+          <a href="https://github.com/__REPO__">Source on GitHub</a>
+        </div>
+      </header>
+
+      <section>
+        <h2>How it differs from ZCode</h2>
+        <ul class="features">
+          <li>
+            <strong>Local models first:</strong> a LiteLLM provider preset
+            (<code>http://localhost:4000/v1</code>) with “Load models” discovery from any
+            OpenAI-compatible server.
+          </li>
+          <li>
+            <strong>No vendor accounts:</strong> Z.ai/BigModel login, coding plans and their
+            providers are removed; <code>zcode login</code>/<code>logout</code> are disabled.
+          </li>
+          <li>
+            <strong>No China egress:</strong> every process blocks connections to China-operated
+            services (the vendor, Alibaba Cloud, Tencent, ByteDance Lark, Chinese model APIs, any
+            <code>.cn</code> host) before DNS.
+          </li>
+          <li>
+            <strong>No telemetry, no remote control:</strong> analytics reporting is off at build
+            time; no auto-update, forced update or remote provider configuration.
+          </li>
+          <li>
+            <strong>TUI extras:</strong> status line with tokens/s, <code>/exit</code>, real context
+            window, and hold-to-delete-faster.
+          </li>
+        </ul>
+        <p>
+          Other providers that are not China-operated (OpenAI, Anthropic, xAI, OpenRouter, custom
+          OpenAI-compatible endpoints) remain available if you add them yourself.
+        </p>
+      </section>
+
+      <section id="download">
+        <h2>Download</h2>
+        <p>
+          These links always point at the newest build of the <code>main</code> branch (<a
+            href="https://github.com/__REPO__/releases/tag/latest"
+            >rolling “latest” prerelease</a
+          >, desktop app version __APP_VERSION__). Versioned releases are listed on the
+          <a href="https://github.com/__REPO__/releases">releases page</a>.
+        </p>
+        <div class="note">
+          Builds are <strong>unsigned</strong> — see <a href="#install">install notes</a>. macOS
+          Apple silicon is built for every release; the other platforms are best-effort, so if a
+          link returns “Not Found” that build failed for the latest commit — check the
+          <a href="https://github.com/__REPO__/releases">releases page</a>.
+        </div>
+
+        <div class="grid">
+          <div class="card" data-platform="mac">
+            <h3>macOS <span class="badge">your system</span></h3>
+            <p class="meta">Apple silicon (M1 or later) and Intel.</p>
+            <div class="buttons">
+              <a
+                class="btn primary"
+                href="https://github.com/__REPO__/releases/download/latest/ZCode-Beyond-mac-arm64.dmg"
+                >Apple silicon .dmg</a
+              >
+              <a
+                class="btn secondary"
+                href="https://github.com/__REPO__/releases/download/latest/ZCode-Beyond-mac-x64.dmg"
+                >Intel .dmg</a
+              >
+            </div>
+            <p class="meta" style="margin-top: 10px">
+              Also as .zip:
+              <a
+                href="https://github.com/__REPO__/releases/download/latest/ZCode-Beyond-mac-arm64.zip"
+                >Apple silicon</a
+              >
+              ·
+              <a
+                href="https://github.com/__REPO__/releases/download/latest/ZCode-Beyond-mac-x64.zip"
+                >Intel</a
+              >
+            </p>
+          </div>
+          <div class="card" data-platform="win">
+            <h3>Windows <span class="badge">your system</span></h3>
+            <p class="meta">Windows 10/11, x64.</p>
+            <div class="buttons">
+              <a
+                class="btn primary"
+                href="https://github.com/__REPO__/releases/download/latest/ZCode-Beyond-win-x64-setup.exe"
+                >Installer .exe</a
+              >
+            </div>
+          </div>
+          <div class="card" data-platform="linux">
+            <h3>Linux <span class="badge">your system</span></h3>
+            <p class="meta">x64 (glibc 2.28 or newer).</p>
+            <div class="buttons">
+              <a
+                class="btn primary"
+                href="https://github.com/__REPO__/releases/download/latest/ZCode-Beyond-linux-x64.AppImage"
+                >AppImage</a
+              >
+              <a
+                class="btn secondary"
+                href="https://github.com/__REPO__/releases/download/latest/ZCode-Beyond-linux-x64.deb"
+                >.deb</a
+              >
+              <a
+                class="btn secondary"
+                href="https://github.com/__REPO__/releases/download/latest/ZCode-Beyond-linux-x64.rpm"
+                >.rpm</a
+              >
+              <a
+                class="btn secondary"
+                href="https://github.com/__REPO__/releases/download/latest/ZCode-Beyond-linux-x64.pkg.tar.zst"
+                >Arch</a
+              >
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin-top: 24px">Terminal CLI (<code>zcode</code>)</h3>
+        <p>Single executable with the terminal UI and agent — no Node.js needed.</p>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Platform</th>
+                <th>Download</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>macOS Apple silicon</td>
+                <td>
+                  <a
+                    href="https://github.com/__REPO__/releases/download/latest/zcode-beyond-cli-mac-arm64.tar.gz"
+                    >zcode-beyond-cli-mac-arm64.tar.gz</a
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td>macOS Intel</td>
+                <td>
+                  <a
+                    href="https://github.com/__REPO__/releases/download/latest/zcode-beyond-cli-mac-x64.tar.gz"
+                    >zcode-beyond-cli-mac-x64.tar.gz</a
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td>Linux x64</td>
+                <td>
+                  <a
+                    href="https://github.com/__REPO__/releases/download/latest/zcode-beyond-cli-linux-x64.tar.gz"
+                    >zcode-beyond-cli-linux-x64.tar.gz</a
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td>Linux arm64</td>
+                <td>
+                  <a
+                    href="https://github.com/__REPO__/releases/download/latest/zcode-beyond-cli-linux-arm64.tar.gz"
+                    >zcode-beyond-cli-linux-arm64.tar.gz</a
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td>Windows x64</td>
+                <td>
+                  <a
+                    href="https://github.com/__REPO__/releases/download/latest/zcode-beyond-cli-win-x64.zip"
+                    >zcode-beyond-cli-win-x64.zip</a
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td>Windows arm64</td>
+                <td>
+                  <a
+                    href="https://github.com/__REPO__/releases/download/latest/zcode-beyond-cli-win-arm64.zip"
+                    >zcode-beyond-cli-win-arm64.zip</a
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td>Any (macOS/Linux) with Node.js 24, adds <code>zcode --web</code></td>
+                <td>
+                  <a
+                    href="https://github.com/__REPO__/releases/download/latest/zcode-beyond-cli-node.tar.gz"
+                    >zcode-beyond-cli-node.tar.gz</a
+                  >
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Checksums: every file has a matching <code>.sha256</code>, and all are listed in
+          <a href="https://github.com/__REPO__/releases/download/latest/SHA256SUMS.txt"
+            >SHA256SUMS.txt</a
+          >.
+        </p>
+      </section>
+
+      <section id="install">
+        <h2>Install notes</h2>
+
+        <details open>
+          <summary>macOS — unsigned app</summary>
+          <p>
+            Open the DMG and drag <strong>ZCode Beyond</strong> into Applications. The app is not
+            notarized, so the first launch is blocked: right-click the app → <strong>Open</strong> →
+            <strong>Open</strong>. If macOS says the app is damaged, remove the quarantine flag:
+          </p>
+          <pre><code>xattr -dr com.apple.quarantine "/Applications/ZCode Beyond.app"</code></pre>
+        </details>
+
+        <details>
+          <summary>Windows — SmartScreen</summary>
+          <p>
+            The installer is unsigned. When SmartScreen shows “Windows protected your PC”, choose
+            <strong>More info</strong> → <strong>Run anyway</strong>.
+          </p>
+        </details>
+
+        <details>
+          <summary>Linux — AppImage, .deb, .rpm</summary>
+          <pre><code>chmod +x ZCode-Beyond-linux-x64.AppImage
+./ZCode-Beyond-linux-x64.AppImage
+
+# or Debian/Ubuntu
+sudo apt install ./ZCode-Beyond-linux-x64.deb</code></pre>
+          <p>
+            The packages install as <code>zcode-beyond</code>, separate from an official ZCode
+            install.
+          </p>
+        </details>
+
+        <details>
+          <summary>Terminal CLI</summary>
+          <p>macOS / Linux (replace <code>mac-arm64</code> with your platform):</p>
+          <pre><code>curl -fLO https://github.com/__REPO__/releases/download/latest/zcode-beyond-cli-mac-arm64.tar.gz
+tar -xzf zcode-beyond-cli-mac-arm64.tar.gz
+mkdir -p ~/.local/bin
+mv zcode-beyond-cli-mac-arm64/zcode ~/.local/bin/zcode
+zcode --help</code></pre>
+          <p>
+            Make sure <code>~/.local/bin</code> is on your <code>PATH</code>. If you downloaded the
+            archive with a browser on macOS, clear the quarantine flag once:
+            <code>xattr -d com.apple.quarantine ~/.local/bin/zcode</code>. On Windows, unzip and run
+            <code>zcode.exe</code>.
+          </p>
+          <p>
+            Node.js build (needs Node.js 24; includes the browser UI via <code>zcode --web</code>):
+          </p>
+          <pre><code>mkdir -p ~/.local/share/zcode-beyond
+tar -xzf zcode-beyond-cli-node.tar.gz -C ~/.local/share/zcode-beyond
+node ~/.local/share/zcode-beyond/zcode/bin/zcode.mjs --web</code></pre>
+          <p>
+            The command is still called <code>zcode</code> and keeps its data in
+            <code>~/.zcode</code>, like upstream ZCode; check <code>command -v zcode</code> if you
+            also have the official CLI installed.
+          </p>
+        </details>
+
+        <details>
+          <summary>Verify a download</summary>
+          <pre><code>shasum -a 256 -c ZCode-Beyond-mac-arm64.dmg.sha256   # macOS
+sha256sum -c ZCode-Beyond-linux-x64.AppImage.sha256  # Linux</code></pre>
+        </details>
+      </section>
+
+      <section id="litellm">
+        <h2>LiteLLM quick setup</h2>
+        <p>
+          <a href="https://docs.litellm.ai/">LiteLLM</a> is a self-hosted, OpenAI-compatible proxy
+          that can sit in front of your local model servers. ZCode Beyond ships a LiteLLM provider
+          template.
+        </p>
+        <ol>
+          <li>
+            Run a LiteLLM proxy for your local models (its default address is
+            <code>http://localhost:4000</code>).
+          </li>
+          <li>
+            In ZCode Beyond open <strong>Settings → Model settings</strong>, add a provider and pick
+            <strong>LiteLLM</strong>. The base URL defaults to
+            <code>http://localhost:4000/v1</code>; change it if your proxy runs elsewhere.
+          </li>
+          <li>
+            Enter your LiteLLM key. If the proxy runs without authentication, any placeholder (for
+            example <code>sk-local</code>) works — the field cannot be empty.
+          </li>
+          <li>
+            Save, then click <strong>Load models</strong> to import the model names from
+            <code>GET /v1/models</code>, or add model names by hand.
+          </li>
+        </ol>
+        <p>
+          “Load models” works for any provider using the OpenAI chat-completions or responses API,
+          so other local OpenAI-compatible servers can be added the same way.
+        </p>
+      </section>
+
+      <footer>
+        <p>
+          ZCode Beyond is a modified version of
+          <a href="https://github.com/zai-org/ZCode">ZCode</a> by the ZCode authors, used under the
+          <a href="https://github.com/__REPO__/blob/main/LICENSE">Apache License 2.0</a>. It is not
+          affiliated with or endorsed by the ZCode authors or Zhipu AI; “ZCode” remains the name of
+          the original product. See
+          <a href="https://github.com/__REPO__/blob/main/NOTICE.md">NOTICE.md</a>.
+        </p>
+        <p>
+          <a href="https://github.com/__REPO__">github.com/__REPO__</a> · This page sets no cookies
+          and loads nothing from other sites; a short inline script only highlights your operating
+          system.
+        </p>
+      </footer>
+    </div>
+    <script>
+      // Local-only platform hint: reads the user agent in the browser, sends nothing.
+      (function () {
+        var ua =
+          (navigator.userAgentData && navigator.userAgentData.platform) ||
+          navigator.platform ||
+          navigator.userAgent ||
+          "";
+        ua = ua.toLowerCase();
+        if (/iphone|ipad|android/.test(ua)) return; // phones and tablets: no desktop build to suggest
+        var platform = /mac/.test(ua)
+          ? "mac"
+          : /win/.test(ua)
+            ? "win"
+            : /linux|x11/.test(ua)
+              ? "linux"
+              : "";
+        if (!platform) return;
+        var card = document.querySelector('.card[data-platform="' + platform + '"]');
+        if (card) card.classList.add("suggested");
+      })();
+    </script>
+  </body>
+</html>

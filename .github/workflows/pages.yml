@@ -1,0 +1,63 @@
+# Deploys the static download site in site/ to GitHub Pages.
+# Spec: specs/self-hosted-build/ci-release.md
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "public/logo/**"
+      - "package.json"
+      - ".github/scripts/build-site.sh"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Build site
+        # The repository slug is injected at build time, so links follow a rename.
+        env:
+          REPO_SLUG: ${{ github.repository }}
+        run: .github/scripts/build-site.sh "$GITHUB_WORKSPACE" _site "$REPO_SLUG"
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

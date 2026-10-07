@@ -1,0 +1,307 @@
+# Builds desktop installers and CLI packages, then publishes them.
+#   push to main      -> rolling prerelease, tag "latest"
+#   push of a v* tag  -> versioned release
+#   workflow_dispatch -> build only, unless "publish" is ticked
+# Spec: specs/self-hosted-build/ci-release.md
+name: Release
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+    # Not evaluated for tag pushes. Docs/site-only commits do not rebuild installers.
+    paths-ignore:
+      - "**/*.md"
+      - "site/**"
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish (main: rolling 'latest' prerelease; v* tag: versioned release)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  # One release run per ref at a time; a newer push waits instead of cancelling
+  # a run that may be half-way through replacing release assets.
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # Official GitHub release mirrors only; never npmmirror.com or other
+  # China-operated mirrors (specs/self-hosted-build/remote-updates-and-litellm.md §6).
+  # bundle.mjs falls back to npmmirror when these are unset, so they are mandatory.
+  ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/
+  ELECTRON_BUILDER_BINARIES_MIRROR: https://github.com/electron-userland/electron-builder-binaries/releases/download/
+  ZCODE_SKIP_REMOTE_ASSETS: "1"
+  # Unsigned builds: never pick up a signing identity from the runner keychain.
+  CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  desktop:
+    name: Desktop ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    # Only macOS arm64 is required; other platforms are best-effort and never
+    # block the release (the publish job checks the required files itself).
+    continue-on-error: ${{ !matrix.required }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS arm64
+            runner: macos-15
+            os: mac
+            arch: arm64
+            required: true
+          - name: macOS x64
+            runner: macos-15-intel
+            os: mac
+            arch: x64
+            required: false
+          - name: Linux x64
+            runner: ubuntu-24.04
+            os: linux
+            arch: x64
+            required: false
+          - name: Windows x64
+            runner: windows-2025
+            os: win
+            arch: x64
+            required: false
+    steps:
+      - name: Check out
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up workspace
+        uses: ./.github/actions/setup-workspace
+
+      - name: Install Linux packaging tools
+        if: matrix.os == 'linux'
+        # rpm: rpmbuild for the rpm target; libarchive-tools: bsdtar for the pacman target.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends rpm libarchive-tools
+
+      - name: Bundle desktop app
+        env:
+          ZCODE_ENV: production
+          # Only for this step: NODE_ENV=production during `pnpm install` would drop devDependencies.
+          NODE_ENV: production
+          TARGET_OS: ${{ matrix.os }}
+          TARGET_ARCH: ${{ matrix.arch }}
+        run: pnpm bundle:desktop -- --os "$TARGET_OS" --arch "$TARGET_ARCH"
+
+      - name: Collect artifacts
+        env:
+          TARGET_OS: ${{ matrix.os }}
+          TARGET_ARCH: ${{ matrix.arch }}
+        run: .github/scripts/collect-desktop-artifacts.sh "$TARGET_OS" "$TARGET_ARCH" packages/desktop/dist release-assets
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-desktop-${{ matrix.os }}-${{ matrix.arch }}
+          path: release-assets/
+          if-no-files-found: error
+          retention-days: 14
+          # Installers are already compressed.
+          compression-level: 0
+
+  cli:
+    name: CLI packages
+    # macOS host: darwin single executables must be ad-hoc signed with codesign,
+    # and build-sea.mjs cross-builds the other targets from official Node.js
+    # binaries (nodejs.org) with a platform-neutral SEA blob.
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - name: Check out
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up workspace
+        uses: ./.github/actions/setup-workspace
+        with:
+          skip-electron-binary: "true"
+
+      - name: Build CLI workspace
+        # Root packages first (shared, provider-node, ...), then every apps/zcode-cli
+        # package including the plugin runtimes the single executable embeds.
+        run: |
+          pnpm --filter "@zcode/cli..." build
+          pnpm exec turbo --skip-infer --cwd apps/zcode-cli run build
+
+      - name: Build single executables
+        # darwin-arm64 is required (and smoke-tested by build-sea.mjs on this host);
+        # every other target is best-effort.
+        run: |
+          dist=apps/zcode-cli/packages/cli/dist
+          for target in darwin-arm64 darwin-x64 linux-x64 linux-arm64 win-x64 win-arm64; do
+            if node apps/zcode-cli/packages/cli/scripts/build-sea.mjs --target "$target"; then
+              echo "built $target"
+            elif [ "$target" = darwin-arm64 ]; then
+              echo "::error::single executable for $target failed"
+              exit 1
+            else
+              echo "::warning::single executable for $target failed; it will be missing from this release"
+            fi
+            # The SEA blob is ~100 MB per target and is not shipped.
+            rm -f "$dist/zcode-$target.sea.blob"
+          done
+
+      - name: Package single executables
+        run: |
+          packaged="$(.github/scripts/package-cli.sh sea apps/zcode-cli/packages/cli/dist release-assets "$GITHUB_WORKSPACE")"
+          echo "$packaged"
+          grep -qx 'mac-arm64' <<<"$packaged" || { echo "::error::mac-arm64 CLI package missing"; exit 1; }
+
+      - name: Build Node.js distribution (CLI + web UI)
+        id: node-dist
+        continue-on-error: true
+        # Universal tarball from `pnpm build:zcode`; needs Node.js 24 at runtime.
+        # The installer script it also writes is not published (it expects a
+        # different download layout than GitHub releases).
+        run: |
+          pnpm build:zcode --base-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/download/latest/"
+          version="$(node -p "require('./dist/zcode/latest.json').version")"
+          .github/scripts/package-cli.sh node "dist/zcode/releases/$version/zcode-$version.tar.gz" release-assets
+
+      - name: Report skipped Node.js distribution
+        if: steps.node-dist.outcome == 'failure'
+        run: echo "::warning::Node.js CLI distribution failed; it will be missing from this release"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-cli
+          path: release-assets/
+          if-no-files-found: error
+          retention-days: 14
+
+  cli-smoke:
+    name: CLI smoke ${{ matrix.target }}
+    needs: cli
+    runs-on: ${{ matrix.runner }}
+    # Informational: runs `zcode --version` on the real OS of each cross-built
+    # executable. Never blocks publishing.
+    continue-on-error: true
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: mac-x64
+            runner: macos-15-intel
+            archive: tar.gz
+          - target: linux-x64
+            runner: ubuntu-24.04
+            archive: tar.gz
+          - target: linux-arm64
+            runner: ubuntu-24.04-arm
+            archive: tar.gz
+          - target: win-x64
+            runner: windows-2025
+            archive: zip
+    steps:
+      - name: Download CLI packages
+        uses: actions/download-artifact@v8
+        with:
+          name: release-cli
+          path: cli
+
+      - name: Run zcode --version
+        env:
+          TARGET: ${{ matrix.target }}
+          ARCHIVE: ${{ matrix.archive }}
+        run: |
+          name="zcode-beyond-cli-$TARGET"
+          cd cli
+          if [ "$ARCHIVE" = zip ]; then
+            powershell -NoProfile -Command "Expand-Archive -Path '$name.zip' -DestinationPath ."
+            "./$name/zcode.exe" --version
+          else
+            tar -xzf "$name.tar.gz"
+            "./$name/zcode" --version
+          fi
+
+  publish:
+    name: Publish
+    needs: [desktop, cli]
+    # Runs even when best-effort jobs failed; the required files are checked below.
+    if: >-
+      !cancelled() &&
+      (github.event_name == 'push' || inputs.publish) &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Check out
+        # Only for the release scripts and package.json; no credentials kept.
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .github/scripts
+            package.json
+          sparse-checkout-cone-mode: false
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: release-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Check required files and write SHA256SUMS.txt
+        run: |
+          cd release-assets
+          missing=0
+          for required in ZCode-Beyond-mac-arm64.dmg ZCode-Beyond-mac-arm64.zip zcode-beyond-cli-mac-arm64.tar.gz; do
+            if [ ! -f "$required" ]; then
+              echo "::error::required release file missing: $required"
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] || exit 1
+          # Verify every per-file checksum, then aggregate them.
+          sha256sum -c ./*.sha256
+          cat ./*.sha256 | sort -k2 > SHA256SUMS.txt
+          ls -la
+
+      - name: Check tag matches app version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [ "${GITHUB_REF_NAME}" != "v${version}" ]; then
+            echo "::warning::tag ${GITHUB_REF_NAME} differs from package.json version ${version}; the app's About box shows ${version}"
+          fi
+
+      - name: Publish rolling prerelease (latest)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          APP_VERSION="$(node -p "require('./package.json').version")" \
+            .github/scripts/publish-release.sh rolling release-assets
+
+      - name: Publish versioned release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: .github/scripts/publish-release.sh versioned "$GITHUB_REF_NAME" release-assets
