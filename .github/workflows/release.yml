@@ -148,6 +148,10 @@ jobs:
         run: |
           pnpm --filter "@zcode/cli..." build
           pnpm exec turbo --skip-infer --cwd apps/zcode-cli run build
+          # Root packages without a build script only get dist/ from `tsc -b` (normally a side
+          # effect of `pnpm typecheck`). The single executable embeds their dist/index.js, so a
+          # fresh runner failed with "Missing @zcode/shared dist files" (then model-option-map).
+          pnpm exec tsc -b packages/shared packages/model-option-map
 
       - name: Build single executables
         # darwin-arm64 is required (and smoke-tested by build-sea.mjs on this host);
