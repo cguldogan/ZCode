@@ -74,6 +74,12 @@ export {
   normalizeZCodeProductFlavor,
 } from "./env.js";
 export * from "./errors.js";
+export {
+  CHINA_EGRESS_BLOCKED_HOST_SUFFIXES,
+  isChinaEgressBlockedHost,
+  isChinaEgressBlockedUrl,
+  ZCODE_EGRESS_BLOCKED_CODE,
+} from "./egressPolicy.js";
 export type { SessionCreateSource } from "./sessionCreateSource.js";
 export { resolveSafeEndpointHostname } from "./endpointHostname.js";
 export * from "./rendererActionTrace.js";

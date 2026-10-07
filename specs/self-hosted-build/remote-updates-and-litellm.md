@@ -126,17 +126,35 @@ many were added.
    `timeout` after 15 s.
 7. Provider with API type `anthropic-messages`: no "Load models" button.
 
-## 6. Vendor contact that remains (out of scope)
+## 6. China egress block
 
-Observed on the packaged build (2026-10-03, `lsof` on all app processes, no
-login): the only external host is `zcode.z.ai`, used for
-`GET /api/v1/client/configs` feature flags (desktop context prompt, dynamic
-workflow; refreshed hourly; sends app version, platform, install id). These
-toggle built-in behaviour and download no code. Login, account quota, plugin
-marketplace refresh (when the store page is opened) and remote-workspace
-runtime assets (when an SSH/WSL workspace is connected) are user-initiated.
-Build time additionally downloads Electron and electron-builder binaries;
-use the official GitHub release mirrors:
+Rule: no process we start may open a network connection to a China-operated
+service. This replaces the earlier "vendor contact that remains" exemption.
+
+- Single owner: `CHINA_EGRESS_BLOCKED_HOST_SUFFIXES` and `isChinaEgressBlockedHost`
+  (`packages/shared/src/egressPolicy.ts`). Blocked: the vendor (`z.ai`,
+  `bigmodel.cn`, `zhipuai.cn`), Alibaba Cloud (`aliyuncs.com`, `aliyun.com`,
+  `alicdn.com`, `alibabacloud.com`, `aliyunga*.com`, `initaa.com`,
+  `cdngslb.com`, `yundunwaf*.com`), Tencent (`qq.com`), ByteDance Lark
+  (`larksuite.com`), Chinese model APIs (`deepseek.com`, `minimaxi.com`,
+  `minimax.io`, `xiaomimimo.com`, `npmmirror.com`), and every `.cn` host.
+- Node processes (CLI/agent, desktop main, host, scheduler): `installChinaEgressGuard()`
+  (`@zcode/shared/node`) runs first in each entry and rejects
+  `net.Socket#connect` to a blocked hostname before DNS. This covers `fetch`,
+  `http(s)`, `tls` and WebSockets. The connect fails with
+  `ZCODE_EGRESS_BLOCKED`.
+- Electron sessions (renderer, webviews, Electron `net`): every session cancels
+  requests to blocked hosts via `webRequest.onBeforeRequest`.
+- Telemetry: `ZCODE_TELEMETRY_ENABLED` is `false` at build time, so ARMS and the
+  data-warehouse reporter stay off even if their endpoint env vars are set.
+- Consequences (accepted): z.ai/BigModel login and models, the official plugin
+  marketplace and icons, WeChat/Feishu bots, Chinese model providers and the
+  desktop feature-flag check all fail closed. LiteLLM, OpenAI, Anthropic,
+  OpenRouter, GitHub and localhost are unaffected.
+- Out of scope: commands the agent runs in a shell (`curl`, `git`, MCP servers);
+  they are separate programs and follow the user's own network setup.
+- Build time still downloads Electron and electron-builder binaries; use the
+  official GitHub release mirrors:
 
 ```bash
 ZCODE_SKIP_REMOTE_ASSETS=1 \
@@ -144,6 +162,10 @@ ELECTRON_MIRROR=https://github.com/electron/electron/releases/download/ \
 ELECTRON_BUILDER_BINARIES_MIRROR=https://github.com/electron-userland/electron-builder-binaries/releases/download/ \
 pnpm bundle:desktop -- --os mac --arch arm64
 ```
+
+Acceptance: a CLI prompt through LiteLLM succeeds and logs only localhost
+connections; `fetch("https://zcode.z.ai")` inside a guarded process rejects with
+`ZCODE_EGRESS_BLOCKED` without a DNS lookup; `https://example.com` is unaffected.
 
 ## 7. Migration boundary
 

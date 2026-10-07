@@ -45,9 +45,10 @@ export const ZCODE_BUILD_COMMIT_ID_ENV = "ZCODE_BUILD_COMMIT_ID" as const;
 export const RUNTIME_ZCODE_DEBUG =
   typeof process !== "undefined" ? process.env.ZCODE_DEBUG : undefined;
 
-// 恢复原因：写死 false 会让运行时已配置的数仓/ARMS 永远空转。
-// 功能保持可用；实际出网由各出口的运行时端点检查决定，未配置不上报。
-export const ZCODE_TELEMETRY_ENABLED: boolean = true;
+// Self-hosted build: telemetry is off at build time, so the Alibaba ARMS RUM SDK and the
+// data-warehouse reporter never start even if ZCODE_ARMS_RUM_ENDPOINT /
+// ZCODE_TELEMETRY_REPORT_ENDPOINT are set. Spec: specs/self-hosted-build/remote-updates-and-litellm.md §6.
+export const ZCODE_TELEMETRY_ENABLED: boolean = false;
 
 /**
  * Self-hosted build policy (specs/self-hosted-build/remote-updates-and-litellm.md).

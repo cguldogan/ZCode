@@ -8,6 +8,7 @@
 //   - 闲时任务（off_peak_tasks）：启动回收中断任务，认领 schedulable=1 的 queued 任务派发；
 //     与 automation 表/消息/常量全部独立，⚠ 无 misfire-skip 语义（顺延不丢弃）
 // 本进程只读写 tasks-index，不碰 UI / agent runtime；createTask 由 host 域执行。
+import "./egressGuardBootstrap.js";
 import {
   AutomationRepo,
   computeAutomationNextRunAt,
