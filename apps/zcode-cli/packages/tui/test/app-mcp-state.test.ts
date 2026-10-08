@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { McpServerStatus } from "@zcode/contracts";
 import { getZCodeCopy } from "@zcode/i18n";
-import { buildMcpLines, mcpNoticeText, windowMcpLines } from "../src/app-mcp-lines.js";
+import { buildMcpLines, windowMcpLines } from "../src/app-mcp-lines.js";
+import { mcpNoticeText } from "../src/app-mcp-notice.js";
 import {
   applyMcpActionResult,
   applyMcpListing,

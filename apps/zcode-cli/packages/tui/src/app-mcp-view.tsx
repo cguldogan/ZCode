@@ -3,7 +3,8 @@
 import { useTerminalDimensions } from "@mbears/opentui-react";
 import type { TuiCopy } from "@zcode/i18n";
 import React from "react";
-import { buildMcpLines, mcpNoticeText, windowMcpLines, type McpLineTone } from "./app-mcp-lines.js";
+import { buildMcpLines, windowMcpLines } from "./app-mcp-lines.js";
+import { mcpNoticeText, type McpLineTone } from "./app-mcp-notice.js";
 import type { McpPanelController } from "./app-mcp-panel.js";
 import { summarizeMcpStatuses } from "./app-mcp-state.js";
 import { palette } from "./app-model.js";

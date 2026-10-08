@@ -107,7 +107,8 @@ export const BUILTIN_ZCODE_SLASH_COMMAND_HELP_ENTRIES: readonly BuiltinZCodeSlas
       ],
       name: "mcp",
       summary: "Show or manage configured MCP servers.",
-      usage: "/mcp [list|status|enable <server>|disable <server>|connect <server>|disconnect <server>]",
+      usage:
+        "/mcp [list|status|enable <server>|disable <server>|connect <server>|disconnect <server>]",
     },
     {
       aliases: ["plugin"],

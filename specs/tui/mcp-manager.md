@@ -79,12 +79,14 @@ interface ZCodeMcpServerEntry {
 }
 type ZCodeMcpServerActionResult =
   | { ok: true; entry: ZCodeMcpServerEntry }
-  | { ok: false; code: "not_configured" | "read_only" | "mcp_unavailable" | "persist_failed"; message: string };
+  | { ok: false; code: "not_configured" | "read_only" | "disabled" | "mcp_unavailable" | "persist_failed" | "apply_failed"; message: string };
 listMcpServerEntries(): Promise<ZCodeMcpServerEntry[]>;
 setMcpServerEnabled(name: string, enabled: boolean): Promise<ZCodeMcpServerActionResult>;
 reconnectMcpServer(name: string): Promise<ZCodeMcpServerActionResult>;
 ```
 
+`apply_failed` means the runtime resync itself threw after a successful persist (the file already
+holds the new intent). `disabled` is a reconnect request for a disabled server.
 A connection failure after a successful persist is **not** an action error: the result is
 `ok: true` with `status.status === "failed"` and `status.error`; the persisted intent stays.
 
@@ -101,8 +103,9 @@ no longer defines the server. `ConfigResult.sources.mcp.serverPaths` records the
 for `user`/`project` servers (the last project file defining the name wins, matching the merge).
 
 TUI: `TuiOptions.mcpManager?: { list(); setEnabled(name, enabled); reconnect(name) }` (the CLI
-adapts the app methods). The sidebar and the panel read one hook (`useMcpServers`), so there is
-one poller (5 s, 10 s after an error) and actions refresh it immediately.
+adapts the app methods). The sidebar keeps its existing poller (`listMcpServers`, 5 s, 10 s after
+an error); the panel loads `list()` on open and on `R`. After a toggle/reconnect the TUI bumps a
+version counter that restarts the sidebar poll, so the sidebar updates immediately.
 
 No ZCode protocol type changes: the TUI runs the app in-process, and the desktop keeps its own
 settings-page path to the same persisted field.
@@ -129,8 +132,8 @@ pending cleared, message shown, list refreshed (poller restarts)
 Enable is the same with `enabled:true` (the field is removed from the file), ending in
 `connected` + tools registered, or `failed` + error. Actions on one facade are serialized in
 admission order, so two quick toggles end in the last requested state both on disk and live.
-The TUI ignores a result for a server whose pending marker was cleared by a newer action (stale
-result rule: each action carries a monotonically increasing id).
+The TUI ignores further Space/`r` on a server with an in-flight action (pending marker) and drops
+listing results whose request id is not the latest (stale-result rule).
 
 ## 5. Keyboard map (MCP view)
 
@@ -162,11 +165,12 @@ result rule: each action carries a monotonically increasing id).
 ## 7. Tests
 
 - `tui/test/app-mcp-state.test.ts`: row view-model (status labels incl. needs-auth, counts,
-  error truncation, origin labels), reducer (select, toggle, expand, reconnect gating, close,
-  stale results), sidebar summary.
+  error truncation, compact width, tool lists), reducer (select, toggle, expand, reconnect gating,
+  close, stale results), summary.
 - `adapters/test/mcp-enabled-config.test.ts`: patch semantics, atomic write, missing server,
   reload through `createConfig` keeps the server disabled, `serverPaths`.
 - `core/test/mcp-server-state.test.ts`: `applyMcpServerState` with a fake port and real registry
   (disable removes tools, enable restores them, reconnect re-lists, single-flight init).
-- `cli/test/mcp-command.test.ts`: `/mcp enable|disable` text path and the TUI adapter.
+- `cli/test/mcp-facade.test.ts`: facade persistence + resync with fakes, reload persistence,
+  serialization, origin resolution, `/mcp enable|disable` text path.
 - Manual: built CLI in a temp `HOME` with a tiny stdio MCP server, toggle off/on and restart.

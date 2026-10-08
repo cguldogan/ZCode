@@ -1276,7 +1276,8 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
           .filter(
             (plugin) =>
               plugin.enabled &&
-              (plugin.id === OFFICIAL_BROWSER_USE_PLUGIN_ID || plugin.id === OFFICIAL_CUA_PLUGIN_ID),
+              (plugin.id === OFFICIAL_BROWSER_USE_PLUGIN_ID ||
+                plugin.id === OFFICIAL_CUA_PLUGIN_ID),
           )
           .map((plugin) => plugin.id),
         builtInServerNames: new Set(Object.keys(builtInMcpServers)),

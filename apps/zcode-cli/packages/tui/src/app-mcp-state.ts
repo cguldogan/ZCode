@@ -39,7 +39,10 @@ export type McpEffect =
 
 export type McpKeyResult = { consumed: boolean; effect?: McpEffect; state: McpPanelState };
 
-export function openMcpPanel(previous?: McpPanelState): { effect: McpEffect; state: McpPanelState } {
+export function openMcpPanel(previous?: McpPanelState): {
+  effect: McpEffect;
+  state: McpPanelState;
+} {
   const requestId = (previous?.requestId ?? 0) + 1;
   return {
     effect: { requestId, type: "load" },

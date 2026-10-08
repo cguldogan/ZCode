@@ -57,7 +57,9 @@ function mcpLines(copy: TuiCopy, state: McpSidebarState): React.ReactNode[] {
   const lines = [
     rowLine(
       copy.sidebar.mcp.servers,
-      counts.disabled > 0 ? `${summary}, ${copy.sidebar.mcp.disabledCount(counts.disabled)}` : summary,
+      counts.disabled > 0
+        ? `${summary}, ${copy.sidebar.mcp.disabledCount(counts.disabled)}`
+        : summary,
       "mcp-summary",
     ),
   ];
@@ -81,7 +83,8 @@ function mcpLines(copy: TuiCopy, state: McpSidebarState): React.ReactNode[] {
   for (const [name, status] of entries.slice(0, MCP_SERVER_ROW_LIMIT)) {
     lines.push(mcpServerLine(copy, name, status));
     // Failed servers get one short reason line; the full text is in /mcp.
-    const reason = status.status === "failed" ? shortMcpError(status.error, SIDEBAR_CONTENT_WIDTH) : undefined;
+    const reason =
+      status.status === "failed" ? shortMcpError(status.error, SIDEBAR_CONTENT_WIDTH) : undefined;
     if (reason) lines.push(textLine(reason, palette.danger, `mcp-${name}-error`));
   }
   if (entries.length > MCP_SERVER_ROW_LIMIT) {

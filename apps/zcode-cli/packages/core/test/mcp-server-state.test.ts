@@ -86,7 +86,9 @@ const stdio = (extra: Partial<McpServerConfig> = {}): McpServerConfig => ({
   ...extra,
 });
 const toolNames = (runtime: Record<string, any>, server: string) =>
-  (runtime.registry.list() as string[]).filter((name) => name.startsWith(`mcp__${server}__`)).sort();
+  (runtime.registry.list() as string[])
+    .filter((name) => name.startsWith(`mcp__${server}__`))
+    .sort();
 
 test("disable removes that server's tools only; enable restores them", async () => {
   const { port, runtime } = createRuntime({ a: stdio(), b: stdio() });
