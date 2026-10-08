@@ -45,6 +45,8 @@ import type { SubagentItem, SubagentsController } from "./app-subagents.js";
 import { SubagentView } from "./app-subagent-view.js";
 import type { ReviewPanelController } from "./app-review-panel.js";
 import { ReviewView } from "./app-review-view.js";
+import type { McpPanelController } from "./app-mcp-panel.js";
+import { McpView } from "./app-mcp-view.js";
 
 const h = React.createElement as (
   type: React.ElementType | string,
@@ -53,6 +55,8 @@ const h = React.createElement as (
 ) => React.ReactElement;
 
 export function AppView(props: {
+  mcp?: McpPanelController;
+  mcpVersion?: number;
   review?: ReviewPanelController;
   subagents?: SubagentsController;
   toggleSidebar?: () => boolean;
@@ -104,8 +108,9 @@ export function AppView(props: {
   expandedWorkflowRunIds?: ReadonlySet<string>;
 }): React.ReactElement {
   const reviewOpen = Boolean(props.review?.state);
-  // The /review view, like a subagent transcript, replaces the conversation and composer.
-  const readOnly = Boolean(props.subagents?.selected) || reviewOpen;
+  const mcpOpen = Boolean(props.mcp?.state) && !reviewOpen;
+  // The /review and /mcp views, like a subagent transcript, replace the conversation and composer.
+  const readOnly = Boolean(props.subagents?.selected) || reviewOpen || mcpOpen;
   const handleShellMouseUp = React.useCallback(() => {
     props.copyCurrentSelection();
     if (!readOnly) props.editorRef.current?.focus();
@@ -116,6 +121,7 @@ export function AppView(props: {
   );
   const mcpStatus = useMcpSidebarStatus(
     props.loginRequired ? undefined : props.options.listMcpServers,
+    props.mcpVersion,
   );
   const transcriptMessages = props.liveModelText
     ? [
@@ -179,7 +185,15 @@ export function AppView(props: {
           pendingApproval: props.approvalQueue.length > 0,
         })
       : null,
-    !reviewOpen && readOnly && props.subagents
+    mcpOpen && props.mcp
+      ? h(McpView, {
+          contentWidth: actionPanelContentWidth,
+          controller: props.mcp,
+          copy: props.copy,
+          pendingApproval: props.approvalQueue.length > 0,
+        })
+      : null,
+    !reviewOpen && !mcpOpen && readOnly && props.subagents
       ? h(SubagentView, {
           controller: props.subagents,
           copy: props.copy,

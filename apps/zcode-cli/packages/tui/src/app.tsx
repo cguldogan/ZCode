@@ -36,6 +36,7 @@ import { useSessionEventApplier } from "./app-session-event-handler.js";
 import { useTuiWorkflowRuns } from "./app-workflow-controller.js";
 import { useTuiApplyResult } from "./app-result.js";
 import { useSubagents } from "./app-subagents.js";
+import { useMcpPanel } from "./app-mcp-panel.js";
 import { useReviewPanel } from "./app-review-panel.js";
 import { useModelThroughput } from "./app-throughput.js";
 import type { TuiOptions } from "./types.js";
@@ -104,6 +105,15 @@ export function TuiApp({
   const sidebar = useSidebarController();
   const subagents = useSubagents(options);
   const review = useReviewPanel({ copy: copy.tui, provider: options.workspaceReview, setStatus });
+  // Bumped after a toggle/reconnect so the sidebar MCP block refreshes now, not on its next poll.
+  const [mcpVersion, setMcpVersion] = useState(0);
+  const bumpMcpVersion = useCallback(() => setMcpVersion((version) => version + 1), []);
+  const mcp = useMcpPanel({
+    copy: copy.tui,
+    manager: options.mcpManager,
+    onChanged: bumpMcpVersion,
+    setStatus,
+  });
 
   const abortControllerRef = useRef<AbortController | undefined>(undefined);
   const draftRef = useRef("");
@@ -248,6 +258,7 @@ export function TuiApp({
     emptyPromptStatus: copy.tui.input.typePrompt,
     messageInsertIndex: messages.length,
     onExit,
+    openMcp: mcp.open,
     openReview: review.open,
     options,
     requestPermission,
@@ -326,6 +337,7 @@ export function TuiApp({
 
   useTuiKeyboardControls({
     readOnlyView: subagents.selected ? { back: subagents.back } : undefined,
+    mcp,
     review,
     inputEditorRef,
     abortControllerRef,
@@ -366,6 +378,8 @@ export function TuiApp({
   });
 
   return React.createElement(AppView, {
+    mcp,
+    mcpVersion,
     review,
     subagents,
     toggleSidebar: sidebar.toggleSidebar,

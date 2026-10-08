@@ -45,3 +45,10 @@ export type {
   TuiWorkspaceReview,
   TuiWriteClipboardText,
 } from "./types.js";
+export type {
+  TuiMcpActionErrorCode,
+  TuiMcpActionResult,
+  TuiMcpManager,
+  TuiMcpServerEntry,
+  TuiMcpServerOrigin,
+} from "./mcp-manager-types.js";

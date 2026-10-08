@@ -4,6 +4,7 @@ import React from "react";
 import type { McpSidebarState } from "./app-model.js";
 import { palette } from "./app-model.js";
 import { SIDEBAR_CONTENT_WIDTH } from "./app-sidebar-layout.js";
+import { mcpDisplayStatus, shortMcpError, summarizeMcpStatuses } from "./app-mcp-state.js";
 import { SidebarSectionHeader } from "./app-sidebar-section-header.js";
 import { displayWidth, truncateDisplay } from "./app-terminal-width.js";
 
@@ -49,11 +50,14 @@ function mcpLines(copy: TuiCopy, state: McpSidebarState): React.ReactNode[] {
   const entries = Object.entries(state.servers).sort(([left], [right]) =>
     left.localeCompare(right),
   );
-  const connected = entries.filter(([, server]) => server.status === "connected").length;
+  // Disabled servers are intentionally off, so they are not counted as "expected connected";
+  // they are reported separately instead (specs/tui/mcp-manager.md section 1).
+  const counts = summarizeMcpStatuses(entries.map(([, server]) => server));
+  const summary = copy.sidebar.mcp.summary({ connected: counts.connected, total: counts.enabled });
   const lines = [
     rowLine(
       copy.sidebar.mcp.servers,
-      copy.sidebar.mcp.summary({ connected, total: entries.length }),
+      counts.disabled > 0 ? `${summary}, ${copy.sidebar.mcp.disabledCount(counts.disabled)}` : summary,
       "mcp-summary",
     ),
   ];
@@ -76,15 +80,9 @@ function mcpLines(copy: TuiCopy, state: McpSidebarState): React.ReactNode[] {
 
   for (const [name, status] of entries.slice(0, MCP_SERVER_ROW_LIMIT)) {
     lines.push(mcpServerLine(copy, name, status));
-    if (status.error) {
-      lines.push(
-        textLine(
-          truncateDisplay(status.error, SIDEBAR_CONTENT_WIDTH),
-          palette.warning,
-          `mcp-${name}-error`,
-        ),
-      );
-    }
+    // Failed servers get one short reason line; the full text is in /mcp.
+    const reason = status.status === "failed" ? shortMcpError(status.error, SIDEBAR_CONTENT_WIDTH) : undefined;
+    if (reason) lines.push(textLine(reason, palette.danger, `mcp-${name}-error`));
   }
   if (entries.length > MCP_SERVER_ROW_LIMIT) {
     lines.push(
@@ -98,11 +96,14 @@ function mcpLines(copy: TuiCopy, state: McpSidebarState): React.ReactNode[] {
   if (state.error) {
     lines.push(textLine(copy.sidebar.mcp.loadFailed, palette.warning, "mcp-refresh-error"));
   }
+  lines.push(textLine(copy.sidebar.mcp.hint, palette.muted, "mcp-hint"));
   return lines;
 }
 
 function mcpServerLine(copy: TuiCopy, name: string, status: McpServerStatus): React.ReactElement {
-  const statusLabel = copy.sidebar.mcp.status[status.status];
+  // OAuth-pending connections read as "connecting" in the sidebar; /mcp spells out "needs auth".
+  const display = mcpDisplayStatus(status);
+  const statusLabel = copy.sidebar.mcp.status[display === "needs_auth" ? "connecting" : display];
   const meta = `${status.transport} ${copy.sidebar.mcp.tools(status.toolCount)}`;
   return textLine(
     `${padEndDisplay(statusLabel, MCP_STATUS_WIDTH)} ${truncateDisplay(name, MCP_NAME_WIDTH)} ${truncateDisplay(meta, MCP_META_WIDTH)}`,

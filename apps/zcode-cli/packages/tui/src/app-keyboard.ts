@@ -32,6 +32,7 @@ import { handleSuggestionNavigationKey } from "./app-keyboard-suggestions.js";
 import { createSidebarShortcutState, type SidebarShortcutState } from "./app-sidebar-shortcut.js";
 import { handleSidebarShortcutKey } from "./app-sidebar-keyboard.js";
 import { handleReadOnlyViewKey } from "./app-keyboard-readonly.js";
+import type { McpPanelController } from "./app-mcp-panel.js";
 import type { ReviewPanelController } from "./app-review-panel.js";
 import type {
   ApprovalPrompt,
@@ -64,6 +65,7 @@ export {
 
 type UseTuiKeyboardControlsOptions = {
   readOnlyView?: { back(): void };
+  mcp?: Pick<McpPanelController, "handleKey" | "state">;
   review?: Pick<ReviewPanelController, "handleKey" | "state">;
   abortControllerRef: MutableRefObject<AbortController | undefined>;
   approvalQueue: ApprovalPrompt[];
@@ -106,6 +108,7 @@ type UseTuiKeyboardControlsOptions = {
 
 export function useTuiKeyboardControls({
   readOnlyView,
+  mcp,
   review,
   abortControllerRef,
   approvalQueue,
@@ -159,6 +162,13 @@ export function useTuiKeyboardControls({
         if (review?.state) {
           resetCtrlCExitGuard(ctrlCExitGuardRef.current);
           if (review.handleKey(key)) consumeKey(key);
+          return;
+        }
+
+        // The /mcp manager owns the keyboard while open (specs/tui/mcp-manager.md).
+        if (mcp?.state) {
+          resetCtrlCExitGuard(ctrlCExitGuardRef.current);
+          if (mcp.handleKey(key)) consumeKey(key);
           return;
         }
 
@@ -397,6 +407,7 @@ export function useTuiKeyboardControls({
       },
       [
         readOnlyView,
+        mcp,
         review,
         abortControllerRef,
         approvalQueue,

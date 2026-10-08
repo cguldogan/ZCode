@@ -21,6 +21,8 @@ export function useSubmitValue(input: {
   emptyPromptStatus: string;
   messageInsertIndex: number;
   onExit?: (code: number) => void;
+  /** Opens the local /mcp manager (specs/tui/mcp-manager.md). */
+  openMcp?: () => void;
   /** Opens the local /review view (specs/tui/diff-review-undo.md §1). */
   openReview?: () => void;
   options: TuiOptions;
@@ -61,6 +63,14 @@ export function useSubmitValue(input: {
         input.setDraftValue("");
         input.setSlashSelection(undefined);
         input.openReview();
+        return;
+      }
+
+      // Bare /mcp opens the manager; `/mcp list|enable|...` keep their text behavior in the CLI.
+      if (input.openMcp && isMcpCommand(text)) {
+        input.setDraftValue("");
+        input.setSlashSelection(undefined);
+        input.openMcp();
         return;
       }
 
@@ -115,6 +125,12 @@ const EXIT_COMMANDS = new Set(["/exit", "/quit"]);
 
 export function isExitCommand(text: string): boolean {
   return EXIT_COMMANDS.has(text.trim().toLowerCase());
+}
+
+const MCP_COMMAND = "/mcp";
+
+export function isMcpCommand(text: string): boolean {
+  return text.trim().toLowerCase() === MCP_COMMAND;
 }
 
 const REVIEW_COMMAND = "/review";

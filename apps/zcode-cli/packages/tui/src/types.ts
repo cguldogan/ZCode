@@ -1,3 +1,4 @@
+import type { TuiMcpManager } from "./mcp-manager-types.js";
 import type { WorkflowRunProgressEnvelope } from "@zcode/shared/zcode-protocol-v4";
 import type { ModelSelection, ZCodeModelOption } from "@zcode/shared";
 import type {
@@ -381,6 +382,8 @@ export type TuiOptions = {
   readSubagentTranscript?: TuiReadSubagentTranscript;
   listWorkspacePathSuggestions?: TuiListWorkspacePathSuggestions;
   listMcpServers?: TuiListMcpServers;
+  /** Provider for the `/mcp` manager view; absent disables the view in this TUI. */
+  mcpManager?: TuiMcpManager;
   listWorkflowRuns?: TuiListWorkflowRuns;
   replayWorkflowRuns?: TuiReplayWorkflowRuns;
   getMainSessionId?: TuiGetMainSessionId;

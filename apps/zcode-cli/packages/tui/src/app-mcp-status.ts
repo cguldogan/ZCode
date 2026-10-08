@@ -7,6 +7,8 @@ const MCP_STATUS_RETRY_INTERVAL_MS = 10_000;
 
 export function useMcpSidebarStatus(
   listMcpServers: TuiListMcpServers | undefined,
+  /** Changing this value restarts polling so an action elsewhere shows up immediately. */
+  refreshVersion = 0,
 ): McpSidebarState {
   const [state, setState] = useState<McpSidebarState>(() => ({
     loading: listMcpServers !== undefined,
@@ -54,7 +56,7 @@ export function useMcpSidebarStatus(
       disposed = true;
       if (timer) clearTimeout(timer);
     };
-  }, [listMcpServers]);
+  }, [listMcpServers, refreshVersion]);
 
   return state;
 }
