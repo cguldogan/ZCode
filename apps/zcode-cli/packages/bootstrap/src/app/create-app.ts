@@ -65,6 +65,11 @@ import {
 } from "./session-store.js";
 import { createWorkflowFacade } from "./workflow-facade.js";
 import { createInputFacade } from "./input-facade.js";
+import {
+  OFFICIAL_BROWSER_USE_PLUGIN_ID,
+  OFFICIAL_CUA_PLUGIN_ID,
+} from "./official-plugin-definitions.js";
+import { createMcpFacade } from "./mcp-facade.js";
 import { createPluginFacadeForApp } from "./plugin-facade.js";
 import { resolvePluginRuntimeFeatures } from "./plugin-runtime-features.js";
 import { createSessionFacade } from "./session-facade.js";
@@ -1266,6 +1271,26 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
             },
           }),
       ...createPluginFacadeForApp({ configResult, options, workingDirectory }),
+      ...createMcpFacade({
+        builtInOwnerPluginIds: pluginOutcome.plugins
+          .filter(
+            (plugin) =>
+              plugin.enabled &&
+              (plugin.id === OFFICIAL_BROWSER_USE_PLUGIN_ID || plugin.id === OFFICIAL_CUA_PLUGIN_ID),
+          )
+          .map((plugin) => plugin.id),
+        builtInServerNames: new Set(Object.keys(builtInMcpServers)),
+        configuredMcpServers,
+        getRuntime,
+        hostSuppliedServers: options.runtimeConfig?.mcp?.servers !== undefined,
+        mcpPort,
+        pluginServerNames: new Set(Object.keys(pluginOutcome.mcpServers)),
+        prepare: () => prepareUserExecutionBoundary({ traceContext }),
+        serverPaths: configResult.sources.mcp.serverPaths,
+        serverSources: configResult.sources.mcp.serverSources,
+        traceContext,
+        untrustedProjectMcpServers,
+      }),
       getPluginReferenceCatalog: () => pluginReferenceCatalog,
       getSkillCatalog: async () => {
         // Skill 目录属于 context 初始化结果。冷恢复必须先恢复 Session 边界，再读取

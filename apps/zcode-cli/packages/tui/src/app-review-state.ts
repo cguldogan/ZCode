@@ -158,7 +158,7 @@ function reload(state: ReviewPanelState): ReviewKeyResult {
 }
 
 /** Printable character of a key; Shift+g arrives as name "g" with shift set. */
-function keyChar(key: ReviewKey): string | undefined {
+export function keyChar(key: ReviewKey): string | undefined {
   if (key.name.length === 1) return key.shift ? key.name.toUpperCase() : key.name;
   if (key.sequence && key.sequence.length === 1) return key.sequence;
   return undefined;

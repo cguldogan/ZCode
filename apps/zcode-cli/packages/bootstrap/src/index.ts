@@ -1,6 +1,12 @@
 // Bootstrap public API surface.
 
 export * from "./app/create-app.js";
+export { createMcpFacade, resolveMcpServerOrigin } from "./app/mcp-facade.js";
+export type {
+  ZCodeMcpServerActionResult,
+  ZCodeMcpServerEntry,
+  ZCodeMcpServerOrigin,
+} from "./app/mcp-types.js";
 export type {
   ListZCodeSessionsOptions,
   PromptInput,

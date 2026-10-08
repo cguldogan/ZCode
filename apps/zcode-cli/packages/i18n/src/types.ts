@@ -166,6 +166,8 @@ export interface TuiCopy {
       };
       summary(input: { connected: number; total: number }): string;
       tools(count: number): string;
+      disabledCount(count: number): string;
+      hint: string;
     };
     request: {
       complete: string;
@@ -320,5 +322,49 @@ export interface TuiCopy {
     pendingApproval: string;
     unavailable: string;
     closed: string;
+  };
+  /** `/mcp` manager view (specs/tui/mcp-manager.md). */
+  mcp: {
+    title: string;
+    listHelp: string;
+    header(input: { connected: number; disabled: number; enabled: number }): string;
+    loading: string;
+    empty: string;
+    loadFailed: string;
+    unavailable: string;
+    closed: string;
+    pendingApproval: string;
+    working: string;
+    noTools: string;
+    toolsHeading(count: number): string;
+    status: {
+      connected: string;
+      connecting: string;
+      disabled: string;
+      disconnected: string;
+      failed: string;
+      needsAuth: string;
+      untrusted: string;
+    };
+    origin: {
+      builtin: string;
+      cli: string;
+      env: string;
+      host: string;
+      plugin: string;
+      project: string;
+      system: string;
+      user: string;
+    };
+    notice: {
+      disabled(name: string): string;
+      enabled(name: string): string;
+      failed(input: { message: string; name: string }): string;
+      needsEnabled(name: string): string;
+      readOnlyBuiltin(input: { name: string; plugins: string }): string;
+      readOnlyOther(input: { name: string; origin: string }): string;
+      readOnlyPlugin(input: { name: string; plugins: string }): string;
+      reconnected(name: string): string;
+    };
   };
 }

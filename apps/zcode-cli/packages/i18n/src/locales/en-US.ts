@@ -57,7 +57,7 @@ Slash Commands:
   /expert [status|resume|stop|<task>]  Run or manage the expert workflow
   /dwf [list|cancel|resume]  List, cancel, or resume dynamic workflow runs
   /fork [latest|checkpointId]  Fork a new session from a workspace checkpoint
-  /mcp [list|status|connect|disconnect]  Show or manage MCP servers
+  /mcp [list|status|enable|disable|connect|disconnect]  Open the MCP manager (TUI) or manage MCP servers
   /mode [mode]          Show or switch permission mode: build, edit, plan, or yolo
   /model [id]           Show or switch the current session model
   /new                  Start a fresh session in the TUI
@@ -225,6 +225,8 @@ Slash Commands:
         },
         summary: ({ connected, total }) => `${connected}/${total} connected`,
         tools: (count) => `${count} ${count === 1 ? "tool" : "tools"}`,
+        disabledCount: (count) => `${count} disabled`,
+        hint: "/mcp to manage",
       },
       request: {
         complete: "complete",
@@ -382,6 +384,53 @@ Slash Commands:
       pendingApproval: "An approval request is waiting. Press Esc to return to it.",
       unavailable: "/review is not available in this client.",
       closed: "Review closed.",
+    },
+    mcp: {
+      title: " MCP ",
+      listHelp: "Up/Down move · Space toggle · r reconnect · t tools · R refresh · Esc close",
+      header: ({ connected, disabled, enabled }) =>
+        `${connected}/${enabled} connected${disabled > 0 ? `, ${disabled} disabled` : ""}`,
+      loading: "Loading MCP servers...",
+      empty: "No MCP servers configured.",
+      loadFailed: "MCP status unavailable. Press R to retry.",
+      unavailable: "The MCP manager is not available in this client.",
+      closed: "MCP manager closed.",
+      pendingApproval: "An approval request is waiting. Press Esc to return to it.",
+      working: "working...",
+      noTools: "no tools",
+      toolsHeading: (count) => `${count} ${count === 1 ? "tool" : "tools"}:`,
+      status: {
+        connected: "connected",
+        connecting: "connecting",
+        disabled: "disabled",
+        disconnected: "disconnected",
+        failed: "failed",
+        needsAuth: "needs auth",
+        untrusted: "untrusted",
+      },
+      origin: {
+        builtin: "built-in",
+        cli: "cli",
+        env: "env",
+        host: "host",
+        plugin: "plugin",
+        project: "project",
+        system: "system",
+        user: "user",
+      },
+      notice: {
+        disabled: (name) => `${name} disabled; its tools were removed from this session.`,
+        enabled: (name) => `${name} enabled.`,
+        failed: ({ message, name }) => `${name}: ${message}`,
+        needsEnabled: (name) => `${name} is disabled; enable it first (Space).`,
+        readOnlyBuiltin: ({ name, plugins }) =>
+          `${name} is provided by ${plugins || "a plugin"}; manage it with /plugins disable <id>.`,
+        readOnlyOther: ({ name, origin }) =>
+          `${name} comes from ${origin} configuration and cannot be toggled here.`,
+        readOnlyPlugin: ({ name, plugins }) =>
+          `${name} is provided by plugin ${plugins || "(unknown)"}; manage it with /plugins.`,
+        reconnected: (name) => `${name} reconnected.`,
+      },
     },
   },
 };

@@ -1,5 +1,6 @@
 import type { ZCodeToolExecResource, BackgroundBashOutputResult } from "@zcode/shared";
 import type { AiSdkModelAdapter } from "@zcode/adapters/model";
+import type { ZCodeMcpServerActionResult, ZCodeMcpServerEntry } from "./mcp-types.js";
 import type {
   AgentRuntime,
   AgentRuntimeConfig,
@@ -398,6 +399,11 @@ export interface ZCodeApp {
   getSkillCatalog(): Promise<SkillLoadOutcome>;
   listMcpServers(): Promise<Record<string, McpServerStatus>>;
   connectMcpServer(name: string): Promise<McpServerStatus>;
+  /** MCP manager (specs/tui/mcp-manager.md): servers with origin, tools and toggle ability. */
+  listMcpServerEntries(): Promise<ZCodeMcpServerEntry[]>;
+  /** Persists `enabled` in the defining config file, then resyncs the live session. */
+  setMcpServerEnabled(name: string, enabled: boolean): Promise<ZCodeMcpServerActionResult>;
+  reconnectMcpServer(name: string): Promise<ZCodeMcpServerActionResult>;
   readBackgroundBashOutput(workId: string, sessionId?: string): Promise<BackgroundBashOutputResult>;
   cancelBackgroundTask?(
     taskId: string,
