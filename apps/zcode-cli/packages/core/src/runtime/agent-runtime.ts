@@ -40,6 +40,7 @@ import type {
   ImageProcessorPort,
   PdfDocumentPort,
   McpConnectionSnapshot,
+  McpServerStatus,
   SkillLoadOutcome,
   SkillPort,
   McpPort,
@@ -171,6 +172,7 @@ export class AgentRuntime {
   private mcpStartupPromise?: Promise<McpConnectionSnapshot>;
   private residencyBlockingWorkCount = 0;
   private mcpInitialized = false;
+  private mcpInitPromise?: Promise<void>;
   private mcpToolsRegistered = false;
   private subagentPort?: SubagentPort;
   private dynamicWorkflowRunPort?: DynamicWorkflowRunPort;
@@ -483,6 +485,12 @@ export interface AgentRuntime {
     previousMode: CollaborationMode;
     traceContext: TraceContext;
   }): Promise<void>;
+  /** Reconnect one MCP server (optionally flipping `enabled`) and resync its model-visible tools. */
+  applyMcpServerState(input: {
+    enabled?: boolean;
+    name: string;
+    traceContext: TraceContext;
+  }): Promise<McpServerStatus>;
   getToolRegistry(): ToolRegistry;
   /**
    * 注册表被外部改写后让 getTools 重算。公开它的唯一使用者是 dwf driver 的 submit profile 运行时

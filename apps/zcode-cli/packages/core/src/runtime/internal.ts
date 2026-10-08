@@ -99,6 +99,7 @@ export interface AgentRuntimeInternal
   mcpStartupPromise?: Promise<McpConnectionSnapshot>;
   residencyBlockingWorkCount: number;
   mcpInitialized: boolean;
+  mcpInitPromise?: Promise<void>;
   mcpToolsRegistered: boolean;
   subagentPort?: SubagentPort;
   dynamicWorkflowRunPort?: DynamicWorkflowRunPort;

@@ -17,6 +17,7 @@ import type {
   TodoItem,
   SessionGoal,
   McpConnectionSnapshot,
+  McpServerStatus,
   TargetChangedPayload,
   DynamicWorkflowRunProgressPayload,
   UserInputAutoResolutionUpdatedPayload,
@@ -271,6 +272,11 @@ export interface AgentRuntimeCoreMethods {
   ): Promise<void>;
   startMcpStartup(traceContext: TraceContext): Promise<McpConnectionSnapshot> | undefined;
   initializeMcp(traceContext: TraceContext): Promise<void>;
+  applyMcpServerState(input: {
+    enabled?: boolean;
+    name: string;
+    traceContext: TraceContext;
+  }): Promise<McpServerStatus>;
   discoverSkillsForContext(traceContext: TraceContext): Promise<SkillLoadOutcome | undefined>;
   createConfigOnlyContextSnapshot(workingDirectory: string): ContextSourceSnapshot;
   initializeMessageHistoryFromContext(

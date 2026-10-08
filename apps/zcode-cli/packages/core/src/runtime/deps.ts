@@ -215,6 +215,8 @@ export type {
   SyntheticUserMessageSource,
   McpConnectionSnapshot,
   McpPort,
+  McpServerStatus,
+  McpToolDescriptor,
   McpServerConfig,
   SubagentPort,
   SubagentTaskSnapshot,
