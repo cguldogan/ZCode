@@ -1,4 +1,6 @@
 import type {
+  TuiMcpActionResult,
+  TuiMcpServerEntry,
   TuiPromptAttachment,
   TuiPromptInput,
   TuiSendInput,
@@ -218,6 +220,10 @@ export type CommandCenterApp = {
   listMcpServers?(): Promise<Record<string, CommandCenterMcpStatus>>;
   listCheckpoints?(options?: { limit?: number }): Promise<CommandCenterCheckpoint[]>;
   connectMcpServer?(name: string): Promise<CommandCenterMcpStatus>;
+  /** MCP manager (specs/tui/mcp-manager.md). */
+  listMcpServerEntries?(): Promise<readonly TuiMcpServerEntry[]>;
+  setMcpServerEnabled?(name: string, enabled: boolean): Promise<TuiMcpActionResult>;
+  reconnectMcpServer?(name: string): Promise<TuiMcpActionResult>;
   disconnectMcpServer?(name: string): Promise<CommandCenterMcpStatus | undefined>;
   expertWorkflowStatus?(options?: {
     abortSignal?: AbortSignal;

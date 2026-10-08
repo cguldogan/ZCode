@@ -91,6 +91,7 @@ export const runTuiCommand = async (
           workspaceDirectory,
         }),
         listMcpServers: promptHandler.listMcpServers,
+        mcpManager: promptHandler.mcpManager,
         workspaceReview: createWorkspaceReviewProvider({ workspaceDirectory }),
         readSubagents: promptHandler.readSubagents,
         readSubagentTranscript: promptHandler.readSubagentTranscript,

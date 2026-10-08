@@ -2,7 +2,8 @@ import type { TuiSubmitPromptResult } from "@zcode/tui";
 import type { CommandCenterDeps, CommandCenterMcpStatus } from "../types.js";
 import { splitArgs } from "../utils.js";
 
-const MCP_COMMAND_USAGE = "Usage: /mcp [list|status|connect <server>|disconnect <server>]";
+const MCP_COMMAND_USAGE =
+  "Usage: /mcp [list|status|enable <server>|disable <server>|connect <server>|disconnect <server>]";
 
 export async function handleMcpCommand(
   args: string,
@@ -23,6 +24,25 @@ export async function handleMcpCommand(
     return {
       mode: deps.getMode?.(),
       response: formatMcpStatusList(statuses),
+    };
+  }
+
+  if (action === "enable" || action === "disable") {
+    if (!serverName) return { mode: deps.getMode?.(), response: MCP_COMMAND_USAGE };
+    if (!app.setMcpServerEnabled) {
+      return {
+        mode: deps.getMode?.(),
+        response: "MCP connection management is not available in this client.",
+      };
+    }
+    // Persists `enabled` in the defining config file (shared with the desktop app) and resyncs
+    // the live session; the result is structured, never parsed from error text.
+    const result = await app.setMcpServerEnabled(serverName, action === "enable");
+    return {
+      mode: deps.getMode?.(),
+      response: result.ok
+        ? `MCP server ${action}d: ${formatMcpStatusLine(serverName, result.entry.status)}.`
+        : `Unable to ${action} MCP server ${serverName}: ${result.message}`,
     };
   }
 

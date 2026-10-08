@@ -101,12 +101,13 @@ export const BUILTIN_ZCODE_SLASH_COMMAND_HELP_ENTRIES: readonly BuiltinZCodeSlas
     },
     {
       details: [
-        "Lists MCP server status by default.",
+        "Opens the MCP manager in the TUI; lists MCP server status in text mode.",
+        "Use enable or disable to persist the switch for a configured server and apply it to the session.",
         "Use connect or disconnect with a configured server name to manage the session connection.",
       ],
       name: "mcp",
       summary: "Show or manage configured MCP servers.",
-      usage: "/mcp [list|status|connect <server>|disconnect <server>]",
+      usage: "/mcp [list|status|enable <server>|disable <server>|connect <server>|disconnect <server>]",
     },
     {
       aliases: ["plugin"],

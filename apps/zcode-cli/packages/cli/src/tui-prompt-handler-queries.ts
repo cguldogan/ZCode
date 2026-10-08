@@ -3,7 +3,7 @@
 import type { CommandCenterApp } from "./command-center.js";
 import { listAppEffortOptions } from "./command-center/effort-options.js";
 import type { TuiPromptHandler } from "./tui-command-state.js";
-import type { TuiSessionMetadata } from "@zcode/tui";
+import type { TuiMcpActionResult, TuiSessionMetadata } from "@zcode/tui";
 
 export async function readTuiSessionMetadata(app: CommandCenterApp): Promise<TuiSessionMetadata> {
   const modelOptions = (await app.listModels?.()) ?? [];
@@ -18,6 +18,12 @@ export async function readTuiSessionMetadata(app: CommandCenterApp): Promise<Tui
     loginRequired: !modelOptions.some((model) => !model.disabledReason),
   };
 }
+
+const mcpUnavailable = (): TuiMcpActionResult => ({
+  code: "mcp_unavailable",
+  message: "MCP management is not available in this client.",
+  ok: false,
+});
 
 export const attachTuiAppQueries = (
   submitPrompt: TuiPromptHandler,
@@ -62,6 +68,20 @@ export const attachTuiAppQueries = (
   submitPrompt.listMcpServers = async () => {
     const activeApp = await getApp();
     return activeApp.listMcpServers?.() ?? {};
+  };
+
+  // The MCP manager view: all state and persistence stay in the app (single owner); this only
+  // forwards, and reports a missing capability as a typed failure instead of throwing.
+  submitPrompt.mcpManager = {
+    list: async () => (await (await getApp()).listMcpServerEntries?.()) ?? [],
+    reconnect: async (name) => {
+      const app = await getApp();
+      return app.reconnectMcpServer?.(name) ?? mcpUnavailable();
+    },
+    setEnabled: async (name, enabled) => {
+      const app = await getApp();
+      return app.setMcpServerEnabled?.(name, enabled) ?? mcpUnavailable();
+    },
   };
 
   submitPrompt.listWorkflowRuns = async () => {
