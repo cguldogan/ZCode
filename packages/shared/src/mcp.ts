@@ -369,6 +369,27 @@ function isValidMcpOAuthConfig(value: unknown): value is McpOAuthConfig {
   return false;
 }
 
+const MCP_ENABLED_KEY = "enabled";
+// 历史遗留：桌面端早期把停用状态写成 enable；读写一律只认 enabled。
+const MCP_LEGACY_ENABLE_KEY = "enable";
+
+/** 启用是默认态：只有显式 `enabled: false` 才算停用。 */
+export function isMcpServerConfigEnabled(config: Record<string, unknown>): boolean {
+  return config[MCP_ENABLED_KEY] !== false;
+}
+
+/**
+ * MCP server 启用开关的唯一写规则（桌面 mcp-sync 与 CLI/TUI 共用，避免两套口径）：
+ * 启用时不落盘冗余字段，并清掉残留的 legacy `enable`，避免 enable:false + enabled:true 的矛盾配置。
+ */
+export function setMcpServerConfigEnabled<T extends Record<string, unknown>>(
+  config: T,
+  enabled: boolean,
+): T {
+  const { [MCP_LEGACY_ENABLE_KEY]: _legacy, [MCP_ENABLED_KEY]: _enabled, ...rest } = config;
+  return (enabled ? rest : { ...rest, [MCP_ENABLED_KEY]: false }) as T;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

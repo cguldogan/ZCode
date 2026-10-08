@@ -483,6 +483,8 @@ export {
   addSuppressedBuiltinInFileConfig,
   removeSuppressedBuiltinInFileConfig,
   updateUiLocaleInFileConfig,
+  updateMcpServerEnabledInFileConfig,
+  type McpServerEnabledPatchResult,
   type PluginEnabledPatchResult,
   type PluginOptionsPatchResult,
   type PluginRemovePatchResult,

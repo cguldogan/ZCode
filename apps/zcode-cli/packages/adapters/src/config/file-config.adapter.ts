@@ -11,6 +11,7 @@ import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import type { RuntimeConfigPatch, UiLocale } from "@zcode/contracts";
+import { setMcpServerConfigEnabled } from "@zcode/shared/mcp";
 import { z } from "zod";
 import {
   CANONICAL_CUA_PLUGIN_ID,
@@ -252,6 +253,41 @@ export async function updatePluginEnabledInFileConfig(
     path: resolvedPath,
     pluginId,
   };
+}
+
+export interface McpServerEnabledPatchResult {
+  enabled: boolean;
+  name: string;
+  path: string;
+}
+
+/**
+ * Patch one MCP server's `enabled` flag inside `mcp.servers` of a config file.
+ *
+ * Patches the raw JSON (never the parsed/validated config) so keys the schema drops or the
+ * desktop wrote survive. The write rule itself is the shared helper also used by the desktop's
+ * mcp-sync, so both clients produce identical files. Throws when the file no longer defines the
+ * server, so a stale UI cannot silently create or resurrect an entry.
+ */
+export async function updateMcpServerEnabledInFileConfig(
+  filePath: string,
+  name: string,
+  enabled: boolean,
+): Promise<McpServerEnabledPatchResult> {
+  const resolvedPath = resolvePath(filePath);
+  const parsed = await readJsonConfigFileOrEmpty(resolvedPath);
+  const mcp = isRecord(parsed.mcp) ? parsed.mcp : {};
+  const servers = isRecord(mcp.servers) ? mcp.servers : {};
+  const server = servers[name];
+  if (!isRecord(server)) {
+    throw new Error(`MCP server "${name}" is not defined in ${resolvedPath}`);
+  }
+  const next = {
+    ...parsed,
+    mcp: { ...mcp, servers: { ...servers, [name]: setMcpServerConfigEnabled(server, enabled) } },
+  };
+  await atomicWriteJson(resolvedPath, next);
+  return { enabled, name, path: resolvedPath };
 }
 
 /**

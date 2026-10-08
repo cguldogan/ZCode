@@ -89,6 +89,8 @@ export interface ConfigResult {
     plugins: PluginConfigSources;
     mcp: {
       serverSources: Record<string, McpServerConfigSource>;
+      /** Defining config file of `user`/`project` servers; the toggle target (single owner of `enabled`). */
+      serverPaths: Record<string, string>;
     };
     env: boolean;
     cli: boolean;
@@ -237,9 +239,10 @@ export function createConfig(options: ConfigFactoryOptions = {}): ConfigResult {
     userPath: userConfigResult.path,
   });
   const mcpServerResolution = resolveEffectiveMcpServers({
+    projectFiles: projectConfigFiles,
+    userPath: userConfigResult.loaded ? userConfigResult.path : undefined,
     cliOverrides: options.cliOverrides,
     envConfig,
-    projectConfig: projectConfigResult.config,
     userConfig: userConfigResult.config,
   });
   merged.mcp = {
@@ -280,6 +283,7 @@ export function createConfig(options: ConfigFactoryOptions = {}): ConfigResult {
       plugins: pluginConfigSources,
       mcp: {
         serverSources: mcpServerResolution.sources,
+        serverPaths: mcpServerResolution.paths,
       },
       env: Object.keys(envConfig).length > 0,
       cli: !!options.cliOverrides,
@@ -370,31 +374,41 @@ export function resolveWorkspaceStorageDir(input: {
 }
 
 function resolveEffectiveMcpServers(input: {
+  projectFiles: readonly ProjectConfigFile[];
+  userPath: string | undefined;
   cliOverrides?: RuntimeConfigPatch;
   envConfig: RuntimeConfigPatch;
-  projectConfig: RuntimeConfigPatch;
   userConfig: RuntimeConfigPatch;
 }): {
   servers: Record<string, McpServerConfig>;
   sources: Record<string, McpServerConfigSource>;
+  paths: Record<string, string>;
 } {
   const servers: Record<string, McpServerConfig> = {};
   const sources: Record<string, McpServerConfigSource> = {};
-  const apply = (source: McpServerConfigSource, patch: RuntimeConfigPatch | undefined) => {
+  const paths: Record<string, string> = {};
+  const apply = (
+    source: McpServerConfigSource,
+    patch: RuntimeConfigPatch | undefined,
+    path?: string,
+  ) => {
     for (const [name, server] of Object.entries(patch?.mcp?.servers ?? {})) {
       servers[name] = server;
       sources[name] = source;
+      if (path) paths[name] = path;
+      else delete paths[name];
     }
   };
 
   apply("system", DefaultRuntimeConfig);
   // MCP server discovery has an extension-specific rule: user config shadows project config.
   // This does not change the global config precedence for model/permission/UI fields.
-  apply("project", input.projectConfig);
-  apply("user", input.userConfig);
+  // Project files merge in discovery order; the last file defining a name wins (its path is the toggle target).
+  for (const file of input.projectFiles) apply("project", file.config, file.path);
+  apply("user", input.userConfig, input.userPath);
   apply("env", input.envConfig);
   apply("cli", input.cliOverrides);
-  return { servers, sources };
+  return { servers, sources, paths };
 }
 
 function logConfigDiagnostics(input: {

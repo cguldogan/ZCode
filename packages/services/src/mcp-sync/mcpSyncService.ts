@@ -18,6 +18,7 @@ import type {
   SettingsDirectoryLocation,
   SettingsDirectorySource,
 } from "@zcode/shared";
+import { isMcpServerConfigEnabled, setMcpServerConfigEnabled } from "@zcode/shared/mcp";
 import type { IMcpSyncService } from "./mcpSync.js";
 import { checkRemoteSyncDirectoryWriteAccess } from "../remote-sync/remoteSyncWriteAccess.js";
 
@@ -455,18 +456,11 @@ function normalizeMcpNameKey(name: string): string {
   return name.trim().toLowerCase();
 }
 
-function readServerEnabled(config: Record<string, unknown>): boolean {
-  return config[ENABLED_KEY] !== false;
-}
+// 写规则的唯一实现在 @zcode/shared/mcp（CLI/TUI 同源）。
+const readServerEnabled = isMcpServerConfigEnabled;
 
 function setServerEnabled(config: McpServerConfig, enabled: boolean): McpServerConfig {
-  // 启用是默认态，不落盘冗余字段；同时清掉可能残留的 legacy enable，
-  // 避免再产出 enable:false + enabled:true 这类自相矛盾的配置。
-  const { [LEGACY_ENABLE_KEY]: _legacyEnable, [ENABLED_KEY]: _enabled, ...rest } = config;
-  if (enabled) {
-    return rest;
-  }
-  return { ...rest, [ENABLED_KEY]: false };
+  return setMcpServerConfigEnabled(config, enabled);
 }
 
 function migrateLegacyEnableFlag(serverMap: Record<string, Record<string, unknown>>): {
